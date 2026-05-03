@@ -91,7 +91,7 @@ function AuthorityArticleList({ title, entries, onNavigate }) {
   );
 }
 
-export default function AuthorityIndex({ data, onNavigate }) {
+export default function AuthorityIndex({ data, onNavigate, onBack }) {
   const authorities = useMemo(() => mergeAuthorityStats(data.meta.authorityStats), [data]);
   const [selectedAuthority, setSelectedAuthority] = useState(authorities[0]?.name || '');
   const [query, setQuery] = useState('');
@@ -149,9 +149,12 @@ export default function AuthorityIndex({ data, onNavigate }) {
 
       <section className="authority-detail">
         <div className="authority-detail-header">
-          <div>
-            <div className="section-label">Authority Index</div>
-            <h2>{activeAuthority.name}</h2>
+          <div className="authority-detail-title">
+            <button className="back-btn" onClick={onBack}>← back</button>
+            <div>
+              <div className="section-label">Authority Index</div>
+              <h2>{activeAuthority.name}</h2>
+            </div>
           </div>
           <div className="authority-detail-stats">
             <div>
