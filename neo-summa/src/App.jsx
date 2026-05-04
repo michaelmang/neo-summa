@@ -1,13 +1,16 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSumma } from './hooks/useSumma';
 import { PART_NAMES, PART_ORDER, PART_SCOPES } from './config/summa';
+import { canAccessApp, getAccessState, getCheckoutUrl, isLocalBypassAvailable, markPurchased, startTrial, verifyPurchasedAccess } from './lib/access';
 import { getAdjacentArticles, getOrderedArticles } from './lib/articles';
 import { AUTHORITIES_PATH, CATALOG_PATH, HOME_PATH, SEARCH_PATH, articlePath, parseRoute, questionPath } from './lib/routing';
 import Sidebar from './components/Sidebar';
+import AccessGate from './components/AccessGate';
 import AdvancedSearch from './components/AdvancedSearch';
 import ArticleView from './components/ArticleView';
 import AuthorityIndex from './components/AuthorityIndex';
 import ErrorBoundary from './components/ErrorBoundary';
+import LandingPage from './components/LandingPage';
 import QuestionCatalogue from './components/QuestionCatalogue';
 import QuestionOverview from './components/QuestionOverview';
 import ReferencePanel from './components/ReferencePanel';
@@ -17,6 +20,9 @@ import './App.css';
 export default function App() {
   const { data, corpusData, bibleData, loading, getArticle, searchArticles, advancedSearchArticles } = useSumma();
   const [route, setRoute] = useState(() => parseRoute(window.location.pathname));
+  const [access, setAccess] = useState(getAccessState);
+  const [checkoutNotice, setCheckoutNotice] = useState(false);
+  const canBypassPaywall = useMemo(() => isLocalBypassAvailable(), []);
   const [hasAppHistory, setHasAppHistory] = useState(false);
   const [referencePanel, setReferencePanel] = useState(null);
 
@@ -33,6 +39,39 @@ export default function App() {
     }
     setRoute(parseRoute(path));
   }, []);
+
+  const beginTrial = useCallback((email) => {
+    setCheckoutNotice(false);
+    setAccess(startTrial(email));
+    pushRoute(HOME_PATH);
+  }, [pushRoute]);
+
+  const openCheckout = useCallback(() => {
+    const checkoutUrl = getCheckoutUrl(access.email);
+    if (!checkoutUrl) {
+      setCheckoutNotice(true);
+      return;
+    }
+    window.location.assign(checkoutUrl);
+  }, [access.email]);
+
+  const confirmPurchase = useCallback(async (email) => {
+    const result = await verifyPurchasedAccess(email || access.email);
+    if (!result.hasAccess) {
+      return result;
+    }
+
+    setCheckoutNotice(false);
+    setAccess(markPurchased(result.email));
+    pushRoute(HOME_PATH);
+    return result;
+  }, [access.email, pushRoute]);
+
+  const bypassPaywall = useCallback(() => {
+    setCheckoutNotice(false);
+    setAccess(markPurchased(access.email || 'local-testing@neo-summa.local'));
+    pushRoute(HOME_PATH);
+  }, [access.email, pushRoute]);
 
   const navigate = useCallback((part, question, article) => {
     const found = getArticle(part, question, article);
@@ -52,6 +91,32 @@ export default function App() {
   }, [hasAppHistory, pushRoute]);
 
   const orderedArticles = useMemo(() => getOrderedArticles(data?.articles), [data]);
+
+  if (route.type === 'landing') {
+    return (
+      <LandingPage
+        access={access}
+        checkoutNotice={checkoutNotice}
+        onStartTrial={beginTrial}
+        onOpenApp={() => pushRoute(HOME_PATH)}
+        onCheckout={openCheckout}
+      />
+    );
+  }
+
+  if (!canAccessApp(access)) {
+    return (
+      <AccessGate
+        access={access}
+        checkoutNotice={checkoutNotice}
+        onStartTrial={beginTrial}
+        onCheckout={openCheckout}
+        onConfirmPurchase={confirmPurchase}
+        onBypassPaywall={bypassPaywall}
+        canBypassPaywall={canBypassPaywall}
+      />
+    );
+  }
 
   if (loading) return (
     <div className="loading">
@@ -79,6 +144,14 @@ export default function App() {
           </div>
         </button>
         <div className="header-stats">
+          {access.isPurchased ? (
+            <span>Lifetime Access</span>
+          ) : access.isTrialActive ? (
+            <span>{access.daysRemaining} trial day{access.daysRemaining === 1 ? '' : 's'} left</span>
+          ) : null}
+          {!access.isPurchased ? (
+            <button className="header-purchase-btn" onClick={openCheckout}>Unlock $12</button>
+          ) : null}
         </div>
       </header>
 
