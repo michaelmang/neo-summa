@@ -1,5 +1,7 @@
 export const HOME_PATH = '/';
 export const AUTHORITIES_PATH = '/authorities';
+export const CATALOG_PATH = '/catalog';
+export const SEARCH_PATH = '/search';
 
 export function parseRoute(pathname) {
   const articleMatch = pathname.match(/^\/articles\/([A-Z0-9]+)\/(\d+)\/(\d+)\/?$/);
@@ -16,6 +18,14 @@ export function parseRoute(pathname) {
 
   if (/^\/authorities\/?$/.test(pathname)) {
     return { type: 'authorities' };
+  }
+
+  if (/^\/(?:catalog|questions)\/?$/.test(pathname)) {
+    return { type: 'catalog' };
+  }
+
+  if (/^\/search\/?$/.test(pathname)) {
+    return { type: 'search' };
   }
 
   return { type: 'home' };

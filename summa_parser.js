@@ -20,31 +20,35 @@ function walkHtml(dir) {
   return results.sort();
 }
 
+function buildQuestionTitleLookup(inputDir) {
+  const titleLookup = new Map();
+  const partFiles = ['FP', 'FS', 'SS', 'TP', 'XP'];
+
+  for (const part of partFiles) {
+    const filepath = path.join(inputDir, `${part}.html`);
+    if (!fs.existsSync(filepath)) continue;
+
+    const html = fs.readFileSync(filepath, 'utf-8');
+    const pattern = new RegExp(`<a\\s+href="${part}\\/${part}(\\d+)\\.html#[^"]+">\\s*\\d+\\.<\\/a>\\s*([^<]+)<br>`, 'gi');
+    for (const match of html.matchAll(pattern)) {
+      titleLookup.set(`${part}:${parseInt(match[1])}`, match[2].trim());
+    }
+  }
+
+  return titleLookup;
+}
+
 function getPartCode(filepath) {
   const basename = path.basename(filepath);
   if (basename.startsWith('FP')) return 'FP';
   if (basename.startsWith('FS')) return 'FS';
   if (basename.startsWith('SS')) return 'SS';
   if (basename.startsWith('TP')) return 'TP';
+  if (basename.startsWith('XP')) return 'XP';
   return null;
 }
 
-function parseArticle($, anchorEl) {
-  const anchorId = $(anchorEl).attr('id') || $(anchorEl).attr('name') || '';
-
-  const match = anchorId.match(/([A-Z0-9]+)Q(\d+)A(\d+)THEP1/);
-  if (!match) return null;
-
-  const part = match[1];
-  const questionNum = parseInt(match[2]);
-  const articleNum = parseInt(match[3]);
-
-  const titleTag = $(anchorEl).nextAll('h3').first();
-  const title = titleTag.text().trim().replace(/\n/g, ' ');
-
-  const table = $(anchorEl).nextAll('table').first();
-  if (!table.length) return null;
-
+function buildArticleFromRows({ $, id, part, questionNum, articleNum, title, rows, linkRoot }) {
   const objections = [];
   const replies = [];
   let sedContraLatin = '';
@@ -58,13 +62,7 @@ function parseArticle($, anchorEl) {
   const respondeoLatinParts = [];
   const respondeoEnglishParts = [];
 
-  table.find('tr').each((_, row) => {
-    const cells = $(row).find('td');
-    if (cells.length < 2) return;
-
-    const latin = $(cells[0]).text().trim();
-    const english = $(cells[1]).text().trim();
-
+  rows.forEach(({ latin = '', english = '' }) => {
     if (!english) return;
 
     // Detect section boundaries — these end any ongoing multi-row section
@@ -120,7 +118,7 @@ function parseArticle($, anchorEl) {
 
   const outboundRefs = [];
 
-  table.find('a[href]').each((_, link) => {
+  linkRoot.find('a[href]').each((_, link) => {
     const href = $(link).attr('href');
     const hrefMatch = href.match(/([A-Z0-9]+)(\d+)\.html#([A-Z0-9]+)Q(\d+)A(\d+)/);
     if (hrefMatch) {
@@ -137,7 +135,7 @@ function parseArticle($, anchorEl) {
     }
   });
 
-  const tableText = table.text();
+  const tableText = linkRoot.text();
   const inlineRefs = [...tableText.matchAll(/Question \[(\d+)\].*?Article \[(\d+)\]/g)];
   for (const ref of inlineRefs) {
     const refQ = parseInt(ref[1]);
@@ -169,7 +167,7 @@ function parseArticle($, anchorEl) {
   ].filter(Boolean));
 
   return {
-    id: anchorId,
+    id,
     part,
     question: questionNum,
     article: articleNum,
@@ -183,6 +181,207 @@ function parseArticle($, anchorEl) {
     authoritiesDiscussed,
     outboundRefs,
     inboundRefs: []
+  };
+}
+
+function getTableRows($, table) {
+  const rows = [];
+
+  table.find('tr').each((_, row) => {
+    const cells = $(row).find('td');
+    if (cells.length < 2) return;
+
+    rows.push({
+      latin: $(cells[0]).text().trim(),
+      english: $(cells[1]).text().trim()
+    });
+  });
+
+  return rows;
+}
+
+function getArticleContentRoot($, anchorEl) {
+  const root = $('<div></div>');
+
+  $(anchorEl).nextAll().each((_, el) => {
+    if (el.tagName?.toLowerCase() === 'hr') return false;
+    root.append($(el).clone());
+  });
+
+  return root;
+}
+
+function getParagraphRows($, root) {
+  const rows = [];
+
+  root.find('p').each((_, paragraph) => {
+    const $paragraph = $(paragraph);
+    if (($paragraph.attr('align') || '').toLowerCase() === 'right') return;
+
+    const english = $paragraph.text().trim();
+    if (!english) return;
+    rows.push({ latin: '', english });
+  });
+
+  return rows;
+}
+
+function parseArticle($, anchorEl) {
+  const anchorId = $(anchorEl).attr('id') || $(anchorEl).attr('name') || '';
+
+  const match = anchorId.match(/([A-Z0-9]+)Q(\d+)A(\d+)THEP1/);
+  if (!match) return null;
+
+  const part = match[1];
+  const questionNum = parseInt(match[2]);
+  const articleNum = parseInt(match[3]);
+
+  const titleTag = $(anchorEl).nextAll('h3').first();
+  const title = titleTag.text().trim().replace(/\n/g, ' ');
+  const table = $(anchorEl).nextAll('table').first();
+
+  if (table.length) {
+    return buildArticleFromRows({
+      $,
+      id: anchorId,
+      part,
+      questionNum,
+      articleNum,
+      title,
+      rows: getTableRows($, table),
+      linkRoot: table
+    });
+  }
+
+  const contentRoot = getArticleContentRoot($, anchorEl);
+  const rows = getParagraphRows($, contentRoot);
+  if (rows.length === 0) return null;
+
+  return buildArticleFromRows({
+    $,
+    id: anchorId,
+    part,
+    questionNum,
+    articleNum,
+    title,
+    rows,
+    linkRoot: contentRoot
+  });
+}
+
+function parseSingleArticleQuestion($, qAnchor, part, questionNum, questionTitle) {
+  const table = $(qAnchor).nextAll('table').first();
+  if (!table.length) return null;
+
+  return buildArticleFromRows({
+    $,
+    id: `${part}Q${questionNum}A1THEP1`,
+    part,
+    questionNum,
+    articleNum: 1,
+    title: questionTitle.replace(/\n/g, ' '),
+    rows: getTableRows($, table),
+    linkRoot: table
+  });
+}
+
+function stripLooseArticleNumber(title) {
+  return title.replace(/^\d+\s+/, '').trim();
+}
+
+function parseLooseQuestionArticles($, part, questionNum) {
+  const articles = [];
+  let sequence = 1;
+
+  $('h3').each((_, heading) => {
+    const rawTitle = $(heading).text().trim().replace(/\s+/g, ' ');
+    if (!rawTitle || /\([A-Z ]*ARTICLES?\)$/i.test(rawTitle)) return;
+
+    const table = $(heading).nextAll('table').first();
+    if (!table.length) return;
+
+    const numberMatch = rawTitle.match(/^(\d+)\s+/);
+    const articleNum = numberMatch ? parseInt(numberMatch[1]) : sequence;
+    const title = stripLooseArticleNumber(rawTitle);
+
+    sequence = Math.max(sequence, articleNum + 1);
+    articles.push(buildArticleFromRows({
+      $,
+      id: `${part}Q${questionNum}A${articleNum}THEP1`,
+      part,
+      questionNum,
+      articleNum,
+      title,
+      rows: getTableRows($, table),
+      linkRoot: table
+    }));
+  });
+
+  return articles;
+}
+
+function cleanQuestionPrefaceCell($, cell) {
+  const clone = $(cell).clone();
+
+  clone.find('script, style').remove();
+  clone.find('br').replaceWith('\n');
+  clone.find('li').each((_, li) => {
+    const text = $(li).text().trim().replace(/\s+/g, ' ');
+    $(li).replaceWith(`\n- ${text}`);
+  });
+
+  return clone
+    .text()
+    .split('\n')
+    .map(line => line.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .join('\n');
+}
+
+function isNavigationPrefaceParagraph($, paragraph) {
+  const $paragraph = $(paragraph);
+  if (($paragraph.attr('align') || '').toLowerCase() === 'right') return true;
+
+  const text = $paragraph.text().trim().replace(/\s+/g, ' ');
+  return /^Index\s*\[|^Question:\s*\d+\s*\[|^Article:\s*\d+\s*\[|^First Part|^Second Part|^Third Part|^Supplement\s*\[/i.test(text);
+}
+
+function extractQuestionPreface($, qAnchor) {
+  const table = $(qAnchor).nextAll('table').first();
+  const rows = [];
+
+  if (table.length) {
+    table.find('tr').each((_, row) => {
+      const cells = $(row).find('td');
+      if (cells.length < 2) return;
+
+      const englishCell = cells[1];
+      const linksToArticles = $(englishCell).find('a[href*="THEP1"], a[href*="A1THEP1"]').length > 0;
+      if (linksToArticles) return false;
+
+      const latin = cleanQuestionPrefaceCell($, cells[0]);
+      const english = cleanQuestionPrefaceCell($, englishCell);
+      if (latin || english) rows.push({ latin, english });
+    });
+  } else {
+    const contentRoot = getArticleContentRoot($, qAnchor);
+    contentRoot.find('p').each((_, paragraph) => {
+      if (isNavigationPrefaceParagraph($, paragraph)) return;
+
+      const $paragraph = $(paragraph);
+      const linksToArticles = $paragraph.find('a[href*="THEP1"], a[href*="A1THEP1"]').length > 0;
+      if (linksToArticles) return false;
+
+      const english = cleanQuestionPrefaceCell($, paragraph);
+      if (english) rows.push({ latin: '', english });
+    });
+  }
+
+  if (rows.length === 0) return null;
+
+  return {
+    latin: rows.map(row => row.latin).filter(Boolean),
+    english: rows.map(row => row.english).filter(Boolean)
   };
 }
 
@@ -381,28 +580,48 @@ function buildAuthorityStats(articles) {
   };
 }
 
-function parseFile($, filepath, partCode) {
+function parseFile($, filepath, partCode, titleLookup) {
   const basename = path.basename(filepath);
   const qMatch = basename.match(/(\d+)\.html/);
-  const questionNum = qMatch ? parseInt(qMatch[1]) : 0;
+  if (!qMatch) return { part: partCode, question: 0, title: '', preface: null, articles: [] };
+
+  const questionNum = parseInt(qMatch[1]);
 
   const qAnchor = $('a').filter((_, el) =>
     /[A-Z0-9]+Q\d+OUTP1/.test($(el).attr('id') || $(el).attr('name') || '')
   ).first();
 
+  const fallbackTitle = titleLookup.get(`${partCode}:${questionNum}`) || '';
   const questionTitle = qAnchor.length
     ? qAnchor.nextAll('h3').first().text().trim()
-    : '';
+    : fallbackTitle;
+  const preface = qAnchor.length ? extractQuestionPreface($, qAnchor) : null;
 
   const articles = [];
+  const seenArticleIds = new Set();
+
+  if (!qAnchor.length) {
+    articles.push(...parseLooseQuestionArticles($, partCode, questionNum));
+    return { part: partCode, question: questionNum, title: questionTitle, preface: null, articles };
+  }
+
   $('a').filter((_, el) =>
     /[A-Z0-9]+Q\d+A\d+THEP1/.test($(el).attr('id') || $(el).attr('name') || '')
   ).each((_, anchorEl) => {
+    const articleId = $(anchorEl).attr('id') || $(anchorEl).attr('name') || '';
+    if (seenArticleIds.has(articleId)) return;
+    seenArticleIds.add(articleId);
+
     const article = parseArticle($, anchorEl);
     if (article) articles.push(article);
   });
 
-  return { part: partCode, question: questionNum, title: questionTitle, articles };
+  if (articles.length === 0 && qAnchor.length && /ONE ARTICLE/i.test(questionTitle)) {
+    const article = parseSingleArticleQuestion($, qAnchor, partCode, questionNum, questionTitle);
+    if (article) articles.push(article);
+  }
+
+  return { part: partCode, question: questionNum, title: questionTitle, preface, articles };
 }
 
 function buildBidirectionalIndex(allArticles) {
@@ -443,6 +662,7 @@ function parseSumma(inputDir, outputFile) {
   }
 
   const files = walkHtml(inputDir);
+  const titleLookup = buildQuestionTitleLookup(inputDir);
   console.log(`Found ${files.length} HTML files`);
 
   const allArticles = [];
@@ -455,13 +675,14 @@ function parseSumma(inputDir, outputFile) {
     const html = fs.readFileSync(filepath, 'utf-8');
     const $ = cheerio.load(html);
 
-    const question = parseFile($, filepath, partCode);
+    const question = parseFile($, filepath, partCode, titleLookup);
 
     if (question.articles.length) {
       allQuestions.push({
         part: question.part,
         question: question.question,
         title: question.title,
+        preface: question.preface,
         articleCount: question.articles.length
       });
       allArticles.push(...question.articles);

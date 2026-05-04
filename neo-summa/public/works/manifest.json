@@ -1,0 +1,54 @@
+{
+  "works": [
+    {
+      "id": "summa-theologica",
+      "title": "Summa Theologica",
+      "kind": "article-collection",
+      "path": "/summa.json",
+      "routeBase": "/articles",
+      "primary": true
+    },
+    {
+      "id": "aristotle-ethics",
+      "title": "Commentary on Aristotle's Nicomachean Ethics",
+      "kind": "article-collection",
+      "path": "/works/aristotle-ethics.json",
+      "routeBase": "/works/aristotle-ethics"
+    },
+    {
+      "id": "aristotle-metaphysics",
+      "title": "Commentary on Aristotle's Metaphysics",
+      "kind": "article-collection",
+      "path": "/works/aristotle-metaphysics.json",
+      "routeBase": "/works/aristotle-metaphysics"
+    },
+    {
+      "id": "aristotle-physics",
+      "title": "Commentary on Aristotle's Physics",
+      "kind": "article-collection",
+      "path": "/works/aristotle-physics.json",
+      "routeBase": "/works/aristotle-physics"
+    },
+    {
+      "id": "aristotle-de-caelo",
+      "title": "Commentary on Aristotle's De Caelo",
+      "kind": "article-collection",
+      "path": "/works/aristotle-de-caelo.json",
+      "routeBase": "/works/aristotle-de-caelo"
+    },
+    {
+      "id": "aristotle-de-anima",
+      "title": "Commentary on Aristotle's De Anima",
+      "kind": "article-collection",
+      "path": "/works/aristotle-de-anima.json",
+      "routeBase": "/works/aristotle-de-anima"
+    },
+    {
+      "id": "aristotle-peri-hermeneias",
+      "title": "Commentary on Aristotle's Peri Hermeneias",
+      "kind": "article-collection",
+      "path": "/works/aristotle-peri-hermeneias.json",
+      "routeBase": "/works/aristotle-peri-hermeneias"
+    }
+  ]
+}

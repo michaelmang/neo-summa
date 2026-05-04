@@ -74,8 +74,10 @@ function AuthorityArticleList({ title, entries, onNavigate }) {
           {entries.map(({ article, authority }) => (
             <button
               key={`${article.id}-${title}`}
-              className="authority-article-row"
+              className="authority-article-row quick-tooltip"
               onClick={() => onNavigate(article.part, article.question, article.article)}
+              data-tooltip={`${article.part} Q.${article.question} A.${article.article}: ${article.title}`}
+              aria-label={`${article.part} Q.${article.question} A.${article.article}: ${article.title}`}
             >
               <span className="authority-article-ref">{article.part} Q.{article.question} A.{article.article}</span>
               <span className="authority-article-title">{article.title}</span>
@@ -150,7 +152,7 @@ export default function AuthorityIndex({ data, onNavigate, onBack }) {
       <section className="authority-detail">
         <div className="authority-detail-header">
           <div className="authority-detail-title">
-            <button className="back-btn" onClick={onBack}>← back</button>
+            <button className="back-btn" onClick={onBack}>Back</button>
             <div>
               <div className="section-label">Authority Index</div>
               <h2>{activeAuthority.name}</h2>

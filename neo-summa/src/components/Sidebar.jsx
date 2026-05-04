@@ -1,29 +1,5 @@
-import { useState, useMemo } from 'react';
-
-function formatQuestionTitle(rawTitle = '') {
-  const lines = rawTitle
-    .split('\n')
-    .map(line => line.trim())
-    .filter(Boolean);
-
-  const cleanLine = (line) =>
-    line
-      .replace(/\s*\((?:one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+articles?\)$/i, '')
-      .replace(/\s*\(Questions? \[\d+\](?:-\d+)?\)$/i, '')
-      .trim();
-
-  if (lines.length > 1) {
-    return {
-      heading: cleanLine(lines[0]),
-      title: cleanLine(lines[lines.length - 1])
-    };
-  }
-
-  return {
-    heading: '',
-    title: cleanLine(lines[0] || rawTitle)
-  };
-}
+import { useMemo, useState } from 'react';
+import { formatQuestionTitle } from '../lib/questionTitles';
 
 function getAuthorityCount(authorityStats = {}) {
   return new Set([
@@ -33,9 +9,9 @@ function getAuthorityCount(authorityStats = {}) {
   ]).size;
 }
 
-export default function Sidebar({ data, selected, view, onSelect, onShowAuthorities, searchArticles, partNames, partScopes }) {
+export default function Sidebar({ data, selected, view, onSelect, onShowAuthorities, onShowCatalog, onShowSearch, searchArticles, partNames, partScopes }) {
   const [search, setSearch] = useState('');
-  const [expandedParts, setExpandedParts] = useState({ FP: true, FS: false, SS: false, TP: false });
+  const [expandedParts, setExpandedParts] = useState({ FP: true, FS: false, SS: false, TP: false, XP: false });
   const [expandedQuestions, setExpandedQuestions] = useState({});
 
   const searchResults = useMemo(() =>
@@ -47,11 +23,12 @@ export default function Sidebar({ data, selected, view, onSelect, onShowAuthorit
     const map = {};
     for (const question of data.meta.questions) {
       const key = `${question.part}:${question.question}`;
-      const { heading, title } = formatQuestionTitle(question.title);
+      const { heading, headingLines, title } = formatQuestionTitle(question.title);
       map[key] = {
         part: question.part,
         question: question.question,
         heading,
+        headingLines,
         title,
         articleCount: question.articleCount,
         articles: []
@@ -84,8 +61,15 @@ export default function Sidebar({ data, selected, view, onSelect, onShowAuthorit
     return grouped;
   }, [data]);
 
-  const togglePart = (part) => setExpandedParts(p => ({ ...p, [part]: !p[part] }));
-  const toggleQuestion = (key) => setExpandedQuestions(q => ({ ...q, [key]: !q[key] }));
+  const togglePart = (part) => setExpandedParts(p => ({
+    ...p,
+    [part]: !(p[part] ?? selected?.part === part)
+  }));
+  const toggleQuestion = (key) => setExpandedQuestions(q => ({
+    ...q,
+    [key]: !(q[key] ?? selectedQuestionKey === key)
+  }));
+  const selectedQuestionKey = selected ? `${selected.part}:${selected.question}` : '';
 
   return (
     <aside className="sidebar">
@@ -103,6 +87,20 @@ export default function Sidebar({ data, selected, view, onSelect, onShowAuthorit
           <span>Authorities</span>
           <span>{getAuthorityCount(data.meta.authorityStats)} indexed</span>
         </button>
+        <button
+          className={`sidebar-library-btn ${view === 'catalog' ? 'active' : ''}`}
+          onClick={() => { setSearch(''); onShowCatalog(); }}
+        >
+          <span>Question Catalog</span>
+          <span>{data.meta.questions.length} questions</span>
+        </button>
+        <button
+          className={`sidebar-library-btn ${view === 'search' ? 'active' : ''}`}
+          onClick={() => { setSearch(''); onShowSearch(); }}
+        >
+          <span>Advanced Search</span>
+          <span>text + filters</span>
+        </button>
       </div>
 
       {search.length > 1 ? (
@@ -111,8 +109,10 @@ export default function Sidebar({ data, selected, view, onSelect, onShowAuthorit
           {searchResults.map(art => (
             <button
               key={art.id}
-              className={`article-btn ${selected?.id === art.id ? 'active' : ''}`}
+              className={`article-btn quick-tooltip ${selected?.id === art.id ? 'active' : ''}`}
               onClick={() => { onSelect(art); setSearch(''); }}
+              data-tooltip={`${art.part} Q.${art.question} A.${art.article}: ${art.title}`}
+              aria-label={`${art.part} Q.${art.question} A.${art.article}: ${art.title}`}
             >
               <span className="article-ref">{art.part} Q.{art.question} A.{art.article}</span>
               <span className="article-title-small">{art.title}</span>
@@ -124,7 +124,7 @@ export default function Sidebar({ data, selected, view, onSelect, onShowAuthorit
           {Object.entries(partNames).map(([partCode, partName]) => {
             const questions = questionsByPart[partCode] || [];
             if (questions.length === 0) return null;
-            const isExpanded = expandedParts[partCode];
+            const isExpanded = Boolean(expandedParts[partCode] ?? selected?.part === partCode);
             const articleCount = questions.reduce((total, question) => total + question.articles.length, 0);
             return (
               <div key={partCode} className="part-section">
@@ -142,7 +142,7 @@ export default function Sidebar({ data, selected, view, onSelect, onShowAuthorit
                   <div className="questions-list">
                     {questions.map(q => {
                       const qKey = `${q.part}:${q.question}`;
-                      const isQExpanded = expandedQuestions[qKey];
+                      const isQExpanded = Boolean(expandedQuestions[qKey] ?? selectedQuestionKey === qKey);
                       const isQSelected = selected?.part === q.part && selected?.question === q.question;
                       return (
                         <div key={qKey} className={`question-item ${isQSelected ? 'question-selected' : ''}`}>
@@ -152,7 +152,7 @@ export default function Sidebar({ data, selected, view, onSelect, onShowAuthorit
                           >
                             <span className="question-num">Q. {q.question}</span>
                             <span className="question-copy">
-                              {q.heading && <span className="question-heading">{q.heading}</span>}
+                              {q.headingLines?.map(line => <span key={line} className="question-heading">{line}</span>)}
                               <span className="question-title">{q.title}</span>
                             </span>
                             <span className="question-toggle">{isQExpanded ? '−' : '+'}</span>
@@ -163,8 +163,10 @@ export default function Sidebar({ data, selected, view, onSelect, onShowAuthorit
                               {[...q.articles].sort((a, b) => a.article - b.article).map(art => (
                                 <button
                                   key={art.id}
-                                  className={`article-btn ${selected?.id === art.id ? 'active' : ''}`}
+                                  className={`article-btn quick-tooltip ${selected?.id === art.id ? 'active' : ''}`}
                                   onClick={() => onSelect(art)}
+                                  data-tooltip={`${art.part} Q.${art.question} A.${art.article}: ${art.title}`}
+                                  aria-label={`${art.part} Q.${art.question} A.${art.article}: ${art.title}`}
                                 >
                                   <span className="article-num">A. {art.article}</span>
                                   <span className="article-title-small">{art.title}</span>
