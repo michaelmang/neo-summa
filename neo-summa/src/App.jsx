@@ -2,13 +2,14 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSumma } from './hooks/useSumma';
 import { PART_NAMES, PART_ORDER, PART_SCOPES } from './config/summa';
 import { getAdjacentArticles, getOrderedArticles } from './lib/articles';
-import { AUTHORITIES_PATH, CATALOG_PATH, HOME_PATH, SEARCH_PATH, articlePath, parseRoute } from './lib/routing';
+import { AUTHORITIES_PATH, CATALOG_PATH, HOME_PATH, SEARCH_PATH, articlePath, parseRoute, questionPath } from './lib/routing';
 import Sidebar from './components/Sidebar';
 import AdvancedSearch from './components/AdvancedSearch';
 import ArticleView from './components/ArticleView';
 import AuthorityIndex from './components/AuthorityIndex';
 import ErrorBoundary from './components/ErrorBoundary';
 import QuestionCatalogue from './components/QuestionCatalogue';
+import QuestionOverview from './components/QuestionOverview';
 import ReferencePanel from './components/ReferencePanel';
 import WelcomeView from './components/WelcomeView';
 import './App.css';
@@ -87,6 +88,7 @@ export default function App() {
           selected={selected}
           view={route.type}
           onSelect={(art) => pushRoute(articlePath(art.part, art.question, art.article))}
+          onSelectQuestion={(part, question) => pushRoute(questionPath(part, question))}
           onShowAuthorities={() => pushRoute(AUTHORITIES_PATH)}
           onShowCatalog={() => pushRoute(CATALOG_PATH)}
           onShowSearch={() => pushRoute(SEARCH_PATH)}
@@ -110,6 +112,7 @@ export default function App() {
               onShowAuthorities={() => pushRoute(AUTHORITIES_PATH)}
               onShowCatalog={() => pushRoute(CATALOG_PATH)}
               onShowSearch={() => pushRoute(SEARCH_PATH)}
+              onShowQuestion={(part, question) => pushRoute(questionPath(part, question))}
               onAdvancedSearch={advancedSearchArticles}
               partNames={PART_NAMES}
               partOrder={PART_ORDER}
@@ -129,7 +132,7 @@ export default function App() {
   );
 }
 
-function MainView({ data, corpusData, bibleData, route, selected, adjacentArticles, orderedArticles, onNavigate, onBack, onShowAuthorities, onShowCatalog, onShowSearch, onAdvancedSearch, partNames, partOrder, getArticle, onOpenReference }) {
+function MainView({ data, corpusData, bibleData, route, selected, adjacentArticles, orderedArticles, onNavigate, onBack, onShowAuthorities, onShowCatalog, onShowSearch, onShowQuestion, onAdvancedSearch, partNames, partOrder, getArticle, onOpenReference }) {
   if (route.type === 'authorities') {
     return (
       <AuthorityIndex
@@ -146,9 +149,33 @@ function MainView({ data, corpusData, bibleData, route, selected, adjacentArticl
         data={data}
         partNames={partNames}
         onNavigate={onNavigate}
+        onShowQuestion={onShowQuestion}
         onBack={onBack}
       />
     );
+  }
+
+  if (route.type === 'question' && route.questionRef) {
+    const question = data.meta.questions.find(candidate =>
+      candidate.part === route.questionRef.part &&
+      candidate.question === route.questionRef.question
+    );
+    const articles = data.articles.filter(article =>
+      article.part === route.questionRef.part &&
+      article.question === route.questionRef.question
+    );
+
+    if (question) {
+      return (
+        <QuestionOverview
+          question={question}
+          articles={articles}
+          partName={partNames[question.part] || question.part}
+          onNavigate={onNavigate}
+          onBack={onBack}
+        />
+      );
+    }
   }
 
   if (route.type === 'search') {
@@ -190,6 +217,7 @@ function MainView({ data, corpusData, bibleData, route, selected, adjacentArticl
       onShowAuthorities={onShowAuthorities}
       onShowCatalog={onShowCatalog}
       onShowSearch={onShowSearch}
+      onShowQuestion={onShowQuestion}
     />
   );
 }

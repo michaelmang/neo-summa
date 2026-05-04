@@ -77,11 +77,6 @@ function ImportedWorkReference({ article, corpusData, onOpenReference }) {
         ))}
       </div>
       <ReferenceNavigator article={article} corpusData={corpusData} onOpenReference={onOpenReference} position="bottom" />
-      {article.source?.href ? (
-        <a className="reference-panel-source" href={article.source.href}>
-          Open source HTML
-        </a>
-      ) : null}
     </div>
   );
 }

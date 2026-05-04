@@ -9,7 +9,7 @@ function getAuthorityCount(authorityStats = {}) {
   ]).size;
 }
 
-export default function Sidebar({ data, selected, view, onSelect, onShowAuthorities, onShowCatalog, onShowSearch, searchArticles, partNames, partScopes }) {
+export default function Sidebar({ data, selected, view, onSelect, onSelectQuestion, onShowAuthorities, onShowCatalog, onShowSearch, searchArticles, partNames, partScopes }) {
   const [search, setSearch] = useState('');
   const [expandedParts, setExpandedParts] = useState({ FP: true, FS: false, SS: false, TP: false, XP: false });
   const [expandedQuestions, setExpandedQuestions] = useState({});
@@ -148,7 +148,10 @@ export default function Sidebar({ data, selected, view, onSelect, onShowAuthorit
                         <div key={qKey} className={`question-item ${isQSelected ? 'question-selected' : ''}`}>
                           <button
                             className="question-btn"
-                            onClick={() => toggleQuestion(qKey)}
+                            onClick={() => {
+                              toggleQuestion(qKey);
+                              onSelectQuestion?.(q.part, q.question);
+                            }}
                           >
                             <span className="question-num">Q. {q.question}</span>
                             <span className="question-copy">

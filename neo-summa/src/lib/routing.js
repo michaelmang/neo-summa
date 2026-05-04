@@ -4,6 +4,17 @@ export const CATALOG_PATH = '/catalog';
 export const SEARCH_PATH = '/search';
 
 export function parseRoute(pathname) {
+  const questionMatch = pathname.match(/^\/questions\/([A-Z0-9]+)\/(\d+)\/?$/);
+  if (questionMatch) {
+    return {
+      type: 'question',
+      questionRef: {
+        part: questionMatch[1],
+        question: Number(questionMatch[2])
+      }
+    };
+  }
+
   const articleMatch = pathname.match(/^\/articles\/([A-Z0-9]+)\/(\d+)\/(\d+)\/?$/);
   if (articleMatch) {
     return {
@@ -33,4 +44,8 @@ export function parseRoute(pathname) {
 
 export function articlePath(part, question, article) {
   return `/articles/${part}/${question}/${article}`;
+}
+
+export function questionPath(part, question) {
+  return `/questions/${part}/${question}`;
 }

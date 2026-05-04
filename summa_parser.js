@@ -539,12 +539,16 @@ function aggregateAuthorityRefs(entries) {
           name: ref.name,
           count: 0,
           citations: [],
-          sections: []
+          sections: [],
+          references: []
         });
       }
 
       const aggregate = byName.get(ref.name);
-      aggregate.count += 1;
+      aggregate.references.push({
+        citation: ref.citation,
+        section: ref.section
+      });
       if (ref.citation && !aggregate.citations.includes(ref.citation)) {
         aggregate.citations.push(ref.citation);
       }
@@ -554,7 +558,28 @@ function aggregateAuthorityRefs(entries) {
     }
   }
 
-  return [...byName.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  return [...byName.values()].map(authority => {
+    const sectionsWithCitations = new Set(
+      authority.references
+        .filter(reference => reference.citation)
+        .map(reference => reference.section)
+    );
+    const visibleReferenceKeys = new Set(
+      authority.references
+        .filter(reference => reference.citation || !sectionsWithCitations.has(reference.section))
+        .map(reference => reference.citation
+          ? `${reference.section}:${reference.citation}`
+          : `${reference.section}:uncited`
+        )
+    );
+
+    return {
+      name: authority.name,
+      count: visibleReferenceKeys.size,
+      citations: authority.citations,
+      sections: authority.sections
+    };
+  }).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 }
 
 function buildAuthorityStats(articles) {

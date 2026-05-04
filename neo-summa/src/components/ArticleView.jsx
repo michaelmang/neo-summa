@@ -32,6 +32,7 @@ function renderInternalRef(match, contextArticle, onNavigate, resolveArticle, ke
   const articleLabelStart = label.indexOf(articleLabel);
   const questionPrefix = label.slice(0, articleLabelStart);
   const articlePrefix = articleLabel.match(/^Articles?\s*/i)?.[0] || '';
+  const isInferred = !match[1] || !match[2];
   let cursor = articlePrefix.length;
 
   return (
@@ -49,11 +50,11 @@ function renderInternalRef(match, contextArticle, onNavigate, resolveArticle, ke
           <span key={`${articleNumber}-${articleMatch.index}`}>
             {separator}
             <button
-              className="inline-citation-link quick-tooltip"
+              className={`inline-citation-link quick-tooltip ${isInferred ? 'inline-citation-inferred' : ''}`}
               onClick={() => onNavigate(target.part, target.question, articleNumber)}
               data-tooltip={targetArticle
-                ? `${target.part} Q.${target.question} A.${articleNumber}: ${targetArticle.title}`
-                : `Go to ${target.part} Q.${target.question} A.${articleNumber}`}
+                ? `${isInferred ? 'Inferred link · ' : ''}${target.part} Q.${target.question} A.${articleNumber}: ${targetArticle.title}`
+                : `${isInferred ? 'Inferred link · ' : ''}Go to ${target.part} Q.${target.question} A.${articleNumber}`}
               aria-label={targetArticle
                 ? `${target.part} Q.${target.question} A.${articleNumber}: ${targetArticle.title}`
                 : `Go to ${target.part} Q.${target.question} A.${articleNumber}`}
@@ -216,6 +217,7 @@ function CrossRefLink({ crossRef, onNavigate, direction, resolveArticle }) {
 }
 
 function AuthorityList({ authorities = [] }) {
+  const [expandedAuthority, setExpandedAuthority] = useState('');
   if (!authorities.length) return <span className="reference-empty">None</span>;
 
   const getAuthorityTooltip = (authority) => [
@@ -228,10 +230,16 @@ function AuthorityList({ authorities = [] }) {
       {authorities.map((authority, index) => (
         <span
           key={authority.name}
-          className="authority-entry"
+          className="authority-entry-wrap"
         >
           {index > 0 ? <span className="reference-separator">; </span> : null}
-          {authority.name}
+          <button
+            type="button"
+            className="authority-entry"
+            onClick={() => setExpandedAuthority(current => current === authority.name ? '' : authority.name)}
+          >
+            {authority.name}
+          </button>
           {authority.count > 1 ? (
             <span
               className="authority-entry-count quick-tooltip"
@@ -239,6 +247,12 @@ function AuthorityList({ authorities = [] }) {
               aria-label={`${authority.name} appears ${authority.count} times`}
             >
               {' '}({authority.count})
+            </span>
+          ) : null}
+          {expandedAuthority === authority.name ? (
+            <span className="authority-entry-detail">
+              {authority.sections?.length ? <span>{authority.sections.join(', ')}</span> : null}
+              {authority.citations?.length ? <span>{authority.citations.join('; ')}</span> : null}
             </span>
           ) : null}
         </span>
@@ -443,10 +457,11 @@ function stripSedContraLead(text) {
   return stripPrefix(text, 'On the contrary,', 'On the contrary.');
 }
 
-function ObjectionBlock({ objection, reply, article, onNavigate, resolveArticle, corpusData, bibleData, onOpenReference }) {
+function ObjectionBlock({ objection, reply, article, onNavigate, resolveArticle, corpusData, bibleData, onOpenReference, readingMode }) {
   const [open, setOpen] = useState(false);
   const [language, setLanguage] = useState('english');
   const showingLatin = language === 'latin';
+  const showingFacing = readingMode === 'latin-facing';
   const hasLatin = Boolean(objection.latin || reply?.latin);
 
   const objectionText = stripPrefix(
@@ -468,7 +483,7 @@ function ObjectionBlock({ objection, reply, article, onNavigate, resolveArticle,
       <div className="objection-header" onClick={() => setOpen(o => !o)}>
         <span className="objection-label">Objection {objection.number}</span>
         <div className="objection-controls">
-          {hasLatin ? (
+          {hasLatin && !showingFacing ? (
             <LanguageToggle
               language={language}
               onChange={setLanguage}
@@ -481,7 +496,9 @@ function ObjectionBlock({ objection, reply, article, onNavigate, resolveArticle,
         </div>
       </div>
       <div className="objection-body">
-        {showingLatin && latinObjectionText ? (
+        {showingFacing && latinObjectionText ? (
+          <BilingualText latin={latinObjectionText} english={objectionText} article={article} onNavigate={onNavigate} resolveArticle={resolveArticle} corpusData={corpusData} bibleData={bibleData} onOpenReference={onOpenReference} />
+        ) : showingLatin && latinObjectionText ? (
           <span className="latin-inline-text">{latinObjectionText}</span>
         ) : (
           <LinkedText text={objectionText} contextArticle={article} onNavigate={onNavigate} resolveArticle={resolveArticle} corpusData={corpusData} bibleData={bibleData} onOpenReference={onOpenReference} />
@@ -491,7 +508,9 @@ function ObjectionBlock({ objection, reply, article, onNavigate, resolveArticle,
         <div className="reply-body">
           <div className="reply-label">Reply to Objection {reply.number}</div>
           <div>
-            {showingLatin && latinReplyText ? (
+            {showingFacing && latinReplyText ? (
+              <BilingualText latin={latinReplyText} english={replyText} article={article} onNavigate={onNavigate} resolveArticle={resolveArticle} corpusData={corpusData} bibleData={bibleData} onOpenReference={onOpenReference} />
+            ) : showingLatin && latinReplyText ? (
               <span className="latin-inline-text">{latinReplyText}</span>
             ) : (
               <LinkedText text={replyText} contextArticle={article} onNavigate={onNavigate} resolveArticle={resolveArticle} corpusData={corpusData} bibleData={bibleData} onOpenReference={onOpenReference} />
@@ -514,14 +533,28 @@ function stripLatinRespondeoLead(text) {
   return stripPrefix(text, 'Respondeo dicendum');
 }
 
-function SedContraSection({ article, onNavigate, resolveArticle, corpusData, bibleData, onOpenReference }) {
+function BilingualText({ latin, english, article, onNavigate, resolveArticle, corpusData, bibleData, onOpenReference }) {
+  return (
+    <div className="bilingual-text">
+      <div className="latin-inline-text">{latin}</div>
+      <div>
+        <LinkedText text={english} contextArticle={article} onNavigate={onNavigate} resolveArticle={resolveArticle} corpusData={corpusData} bibleData={bibleData} onOpenReference={onOpenReference} />
+      </div>
+    </div>
+  );
+}
+
+function SedContraSection({ article, onNavigate, resolveArticle, corpusData, bibleData, onOpenReference, readingMode }) {
   const [language, setLanguage] = useState('english');
   const hasLatin = Boolean(article.sedContra?.latin);
   const showingLatin = hasLatin && language === 'latin';
+  const showingFacing = hasLatin && readingMode === 'latin-facing';
+  const latinText = `${stripLatinSedContraLead(article.sedContra.latin)}`;
+  const englishText = stripSedContraLead(article.sedContra.english);
 
   return (
     <div className="section">
-      {hasLatin ? (
+      {hasLatin && !showingFacing ? (
         <div className="section-header-row section-tools-only">
           {hasLatin ? (
             <LanguageToggle
@@ -534,26 +567,31 @@ function SedContraSection({ article, onNavigate, resolveArticle, corpusData, bib
       ) : null}
       <div className={`sed-contra ${showingLatin ? 'latin-inline-text' : ''}`}>
         <span className="argument-lead">
-          {showingLatin ? 'Sed contra est quod' : 'On the contrary'}
+          {showingLatin || showingFacing ? 'Sed contra est quod' : 'On the contrary'}
         </span>
-        {showingLatin ? (
-          stripLatinSedContraLead(article.sedContra.latin)
+        {showingFacing ? (
+          <BilingualText latin={latinText} english={englishText} article={article} onNavigate={onNavigate} resolveArticle={resolveArticle} corpusData={corpusData} bibleData={bibleData} onOpenReference={onOpenReference} />
+        ) : showingLatin ? (
+          latinText
         ) : (
-          <LinkedText text={stripSedContraLead(article.sedContra.english)} contextArticle={article} onNavigate={onNavigate} resolveArticle={resolveArticle} corpusData={corpusData} bibleData={bibleData} onOpenReference={onOpenReference} />
+          <LinkedText text={englishText} contextArticle={article} onNavigate={onNavigate} resolveArticle={resolveArticle} corpusData={corpusData} bibleData={bibleData} onOpenReference={onOpenReference} />
         )}
       </div>
     </div>
   );
 }
 
-function RespondeoSection({ article, onNavigate, resolveArticle, corpusData, bibleData, onOpenReference }) {
+function RespondeoSection({ article, onNavigate, resolveArticle, corpusData, bibleData, onOpenReference, readingMode }) {
   const [language, setLanguage] = useState('english');
   const hasLatin = Boolean(article.respondeo?.latin);
   const showingLatin = hasLatin && language === 'latin';
+  const showingFacing = hasLatin && readingMode === 'latin-facing';
+  const latinText = stripLatinRespondeoLead(article.respondeo.latin);
+  const englishText = stripRespondeoLead(article.respondeo.english);
 
   return (
     <div className="section">
-      {hasLatin ? (
+      {hasLatin && !showingFacing ? (
         <div className="section-header-row section-tools-only">
           {hasLatin ? (
             <LanguageToggle
@@ -567,13 +605,15 @@ function RespondeoSection({ article, onNavigate, resolveArticle, corpusData, bib
 
       <div className={`respondeo ${showingLatin ? 'respondeo-latin' : ''}`}>
         <span className="argument-lead">
-          {showingLatin ? 'Respondeo dicendum' : 'I answer that'}
+          {showingLatin || showingFacing ? 'Respondeo dicendum' : 'I answer that'}
         </span>
-        {showingLatin ? (
-          stripLatinRespondeoLead(article.respondeo.latin)
+        {showingFacing ? (
+          <BilingualText latin={latinText} english={englishText} article={article} onNavigate={onNavigate} resolveArticle={resolveArticle} corpusData={corpusData} bibleData={bibleData} onOpenReference={onOpenReference} />
+        ) : showingLatin ? (
+          latinText
         ) : (
           <LinkedText
-            text={stripRespondeoLead(article.respondeo.english)}
+            text={englishText}
             contextArticle={article}
             onNavigate={onNavigate}
             resolveArticle={resolveArticle}
@@ -584,22 +624,6 @@ function RespondeoSection({ article, onNavigate, resolveArticle, corpusData, bib
         )}
       </div>
     </div>
-  );
-}
-
-function QuestionPreface({ article, questionMeta }) {
-  const prefaceLines = questionMeta?.preface?.english?.filter(Boolean) || [];
-  const shouldShowPreface = article.article === 1 && prefaceLines.length > 0;
-
-  if (!shouldShowPreface) return null;
-
-  return (
-    <section className="article-preface-block" aria-label="Question preface">
-      <div className="article-preface-label">Before This Question</div>
-      {prefaceLines.map(line => (
-        <p key={line}>{line}</p>
-      ))}
-    </section>
   );
 }
 
@@ -623,8 +647,21 @@ function QuestionProgress({ article, questionMeta }) {
   );
 }
 
+const READING_MODES = [
+  ['full', 'Full'],
+  ['article', 'Plain'],
+  ['respondeo', 'Respondeo'],
+  ['answer-replies', 'Respondeo and Replies'],
+  ['latin-facing', 'Latin']
+];
+
 export default function ArticleView({ article, onNavigate, resolveArticle, previousArticle, nextArticle, adjacentContext, questionMeta, partNames, corpusData, bibleData, onOpenReference }) {
   const partName = partNames[article.part] || article.part;
+  const [readingMode, setReadingMode] = useState('full');
+  const showReaderContext = readingMode === 'full';
+  const showObjections = !['respondeo', 'answer-replies'].includes(readingMode);
+  const showRepliesOnly = readingMode === 'answer-replies';
+  const showSedContra = !['respondeo', 'answer-replies'].includes(readingMode);
 
   return (
     <div className="article-view">
@@ -658,31 +695,64 @@ export default function ArticleView({ article, onNavigate, resolveArticle, previ
       <div className="article-content">
         <h2 className="article-title">{article.title}</h2>
 
-        <QuestionPreface article={article} questionMeta={questionMeta} />
-
-        <div className="article-reference-tables">
-          <AuthorityTable article={article} />
-          <StructuralNavigationTable adjacentContext={adjacentContext} onNavigate={onNavigate} />
-          <CrossReferenceTable article={article} onNavigate={onNavigate} resolveArticle={resolveArticle} />
+        <div className="reading-mode-bar" aria-label="Reading mode">
+          {READING_MODES.map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              className={readingMode === mode ? 'active' : ''}
+              onClick={() => setReadingMode(mode)}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
-        {article.objections?.length > 0 && (
+        {showReaderContext ? (
+          <div className="article-reference-tables">
+            <AuthorityTable article={article} />
+            <StructuralNavigationTable adjacentContext={adjacentContext} onNavigate={onNavigate} />
+            <CrossReferenceTable article={article} onNavigate={onNavigate} resolveArticle={resolveArticle} />
+          </div>
+        ) : null}
+
+        {showObjections && article.objections?.length > 0 && (
           <div className="section">
             <div className="section-label">Objections & replies</div>
             {article.objections.map(obj => {
               const reply = article.replies?.find(r => r.number === obj.number);
-              return <ObjectionBlock key={obj.number} objection={obj} reply={reply} article={article} onNavigate={onNavigate} resolveArticle={resolveArticle} corpusData={corpusData} bibleData={bibleData} onOpenReference={onOpenReference} />;
+              return <ObjectionBlock key={obj.number} objection={obj} reply={reply} article={article} onNavigate={onNavigate} resolveArticle={resolveArticle} corpusData={corpusData} bibleData={bibleData} onOpenReference={onOpenReference} readingMode={readingMode} />;
             })}
           </div>
         )}
 
-        {article.sedContra?.english && (
-          <SedContraSection article={article} onNavigate={onNavigate} resolveArticle={resolveArticle} corpusData={corpusData} bibleData={bibleData} onOpenReference={onOpenReference} />
+        {showSedContra && article.sedContra?.english && (
+          <SedContraSection article={article} onNavigate={onNavigate} resolveArticle={resolveArticle} corpusData={corpusData} bibleData={bibleData} onOpenReference={onOpenReference} readingMode={readingMode} />
         )}
 
         {article.respondeo?.english && (
-          <RespondeoSection article={article} onNavigate={onNavigate} resolveArticle={resolveArticle} corpusData={corpusData} bibleData={bibleData} onOpenReference={onOpenReference} />
+          <RespondeoSection article={article} onNavigate={onNavigate} resolveArticle={resolveArticle} corpusData={corpusData} bibleData={bibleData} onOpenReference={onOpenReference} readingMode={readingMode} />
         )}
+
+        {showRepliesOnly && article.replies?.length > 0 ? (
+          <div className="section">
+            <div className="section-label">Replies</div>
+            {article.replies.map(reply => (
+              <div key={reply.number} className="reply-only-block">
+                <div className="reply-label">Reply to Objection {reply.number}</div>
+                <LinkedText
+                  text={stripPrefix(reply.english, `Reply to Objection ${reply.number}:`, `Reply to Objection ${reply.number}.`)}
+                  contextArticle={article}
+                  onNavigate={onNavigate}
+                  resolveArticle={resolveArticle}
+                  corpusData={corpusData}
+                  bibleData={bibleData}
+                  onOpenReference={onOpenReference}
+                />
+              </div>
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   );

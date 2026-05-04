@@ -83,7 +83,7 @@ function getPrefaceLines(question) {
   return question.preface?.english?.filter(Boolean) || [];
 }
 
-export default function QuestionCatalogue({ data, partNames, onNavigate, onBack }) {
+export default function QuestionCatalogue({ data, partNames, onNavigate, onShowQuestion, onBack }) {
   const [selectedPart, setSelectedPart] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [query, setQuery] = useState('');
@@ -217,7 +217,7 @@ export default function QuestionCatalogue({ data, partNames, onNavigate, onBack 
                           {question.firstArticle ? (
                             <button
                               className="welcome-question-link quick-tooltip"
-                              onClick={() => onNavigate(question.firstArticle.part, question.firstArticle.question, question.firstArticle.article)}
+                              onClick={() => onShowQuestion?.(question.part, question.question) || onNavigate(question.firstArticle.part, question.firstArticle.question, question.firstArticle.article)}
                               data-tooltip={`${part.name} Q.${question.question}: ${question.title}`}
                               aria-label={`${part.name} Q.${question.question}: ${question.title}`}
                             >
