@@ -25,7 +25,9 @@ export default function LandingPage({ access, checkoutNotice, onStartTrial, onOp
         </button>
         <div className="landing-nav-actions">
           <button className="landing-link-button" onClick={onOpenApp}>Open App</button>
-          <button className="landing-link-button" onClick={onCheckout}>Unlock for $12</button>
+          {access.isPurchased ? null : (
+            <button className="landing-link-button" onClick={onCheckout}>Unlock for $12</button>
+          )}
         </div>
       </nav>
 
@@ -44,19 +46,23 @@ export default function LandingPage({ access, checkoutNotice, onStartTrial, onOp
             <span>{accessMessage.detail}</span>
           </div>
 
-          <form className="trial-form" onSubmit={handleSubmit}>
-            <label>
-              <span>Email</span>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={event => setEmail(event.target.value)}
-                placeholder="you@example.com"
-              />
-            </label>
-            <button type="submit">{access.hasTrialStarted ? 'Continue Preview' : 'Begin 7-Day Preview'}</button>
-          </form>
+          {access.hasTrialStarted || access.isPurchased ? (
+            <button className="landing-primary-action" onClick={onOpenApp}>Open App</button>
+          ) : (
+            <form className="trial-form" onSubmit={handleSubmit}>
+              <label>
+                <span>Email</span>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={event => setEmail(event.target.value)}
+                  placeholder="you@example.com"
+                />
+              </label>
+              <button type="submit">Begin 7-Day Preview</button>
+            </form>
+          )}
           {checkoutNotice ? (
             <p className="checkout-notice">Stripe checkout is not configured yet. Add a Checkout link or backend endpoint in <code>VITE_STRIPE_CHECKOUT_URL</code>.</p>
           ) : null}

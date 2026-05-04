@@ -32,6 +32,30 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  useEffect(() => {
+    if (!access.email || access.isPurchased) return;
+
+    let cancelled = false;
+    let timeoutId;
+    async function syncPurchasedAccess() {
+      const result = await verifyPurchasedAccess(access.email);
+      if (!cancelled && result.hasAccess) {
+        setAccess(markPurchased(result.email));
+        return;
+      }
+
+      if (!cancelled) {
+        timeoutId = window.setTimeout(syncPurchasedAccess, 5000);
+      }
+    }
+
+    syncPurchasedAccess();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [access.email, access.isPurchased]);
+
   const pushRoute = useCallback((path) => {
     if (window.location.pathname !== path) {
       window.history.pushState({}, '', path);

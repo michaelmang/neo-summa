@@ -12,7 +12,8 @@ export async function stripeRequest(path, { method = 'GET', body } = {}) {
     method,
     headers: {
       Authorization: `Bearer ${secretKey}`,
-      'Content-Type': 'application/x-www-form-urlencoded'
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Stripe-Version': '2024-06-20'
     },
     body: body ? new URLSearchParams(body) : undefined
   });
@@ -39,9 +40,53 @@ export async function markCustomerLifetimeAccess({ customerId, email, source = '
 }
 
 export async function customerHasLifetimeAccess(email) {
-  const query = `email:'${escapeStripeSearchValue(email)}'`;
-  const result = await stripeRequest(`/customers/search?${new URLSearchParams({ query, limit: '10' })}`);
+  const result = await stripeRequest(`/customers?${new URLSearchParams({
+    email: normalizeEmail(email),
+    limit: '10'
+  })}`);
   return result.data.some(customer => customer?.metadata?.[ACCESS_METADATA_KEY] === 'true');
+}
+
+export async function emailHasPaidCheckout(email) {
+  const paidSession = await findPaidCheckoutSession(email, true) ||
+    await findPaidCheckoutSession(email, false);
+
+  if (!paidSession) return false;
+
+  await markCustomerLifetimeAccess({
+    customerId: typeof paidSession.customer === 'string' ? paidSession.customer : '',
+    email: normalizeEmail(email),
+    source: 'stripe_checkout_lookup'
+  });
+
+  return true;
+}
+
+async function findPaidCheckoutSession(email, requireExpectedPaymentLink) {
+  const query = { limit: '100' };
+  if (requireExpectedPaymentLink && process.env.STRIPE_PAYMENT_LINK_ID) {
+    query.payment_link = process.env.STRIPE_PAYMENT_LINK_ID;
+  }
+
+  const sessions = await stripeRequest(`/checkout/sessions?${new URLSearchParams(query)}`);
+  return sessions.data.find(session =>
+    session.mode === 'payment' &&
+    session.payment_status === 'paid' &&
+    (!requireExpectedPaymentLink || isExpectedPaymentLink(session)) &&
+    isExpectedAmount(session) &&
+    normalizeEmail(session.customer_details?.email || session.customer_email) === normalizeEmail(email)
+  );
+}
+
+export function isExpectedPaymentLink(session) {
+  const expectedPaymentLink = process.env.STRIPE_PAYMENT_LINK_ID;
+  return !expectedPaymentLink || session.payment_link === expectedPaymentLink;
+}
+
+export function isExpectedAmount(session) {
+  const expectedAmount = Number(process.env.STRIPE_EXPECTED_AMOUNT || 1200);
+  const expectedCurrency = String(process.env.STRIPE_EXPECTED_CURRENCY || 'usd').toLowerCase();
+  return session.amount_total === expectedAmount && session.currency === expectedCurrency;
 }
 
 async function createAccessCustomer(email, source) {
@@ -57,6 +102,6 @@ async function createAccessCustomer(email, source) {
   return customer.id;
 }
 
-function escapeStripeSearchValue(value = '') {
-  return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+function normalizeEmail(email = '') {
+  return String(email).trim().toLowerCase();
 }

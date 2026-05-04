@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { markCustomerLifetimeAccess } from './_stripe.js';
+import { isExpectedAmount, isExpectedPaymentLink, markCustomerLifetimeAccess } from './_stripe.js';
 
 export const config = {
   api: {
@@ -49,17 +49,6 @@ async function handleCheckoutCompleted(session) {
     email,
     source: 'stripe_checkout'
   });
-}
-
-function isExpectedPaymentLink(session) {
-  const expectedPaymentLink = process.env.STRIPE_PAYMENT_LINK_ID;
-  return !expectedPaymentLink || session.payment_link === expectedPaymentLink;
-}
-
-function isExpectedAmount(session) {
-  const expectedAmount = Number(process.env.STRIPE_EXPECTED_AMOUNT || 1200);
-  const expectedCurrency = String(process.env.STRIPE_EXPECTED_CURRENCY || 'usd').toLowerCase();
-  return session.amount_total === expectedAmount && session.currency === expectedCurrency;
 }
 
 async function readRawBody(req) {

@@ -1,4 +1,4 @@
-import { customerHasLifetimeAccess } from './_stripe.js';
+import { customerHasLifetimeAccess, emailHasPaidCheckout } from './_stripe.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -16,7 +16,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Email is required' });
     }
 
-    const hasAccess = await customerHasLifetimeAccess(normalizedEmail);
+    const hasAccess = await customerHasLifetimeAccess(normalizedEmail) ||
+      await emailHasPaidCheckout(normalizedEmail);
     return res.status(200).json({ email: normalizedEmail, hasAccess });
   } catch (error) {
     console.error('access-status failed', error);
