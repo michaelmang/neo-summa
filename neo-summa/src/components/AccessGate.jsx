@@ -1,18 +1,20 @@
 import { useState } from 'react';
 
 export default function AccessGate({ access, checkoutNotice, canBypassPaywall, onStartTrial, onCheckout, onConfirmPurchase, onBypassPaywall }) {
+  const hasExpiredPreview = access.hasTrialStarted && !access.isTrialActive && !access.isPurchased;
+
   return (
     <main className="access-gate">
       <section className="access-gate-card">
-        <p className="landing-kicker">{access.hasTrialStarted ? 'Preview complete' : 'Sign up required'}</p>
-        <h1>{access.hasTrialStarted ? 'Continue with lifetime access.' : 'Begin your free preview.'}</h1>
+        <p className="landing-kicker">{hasExpiredPreview ? 'Preview complete' : 'Sign up required'}</p>
+        <h1>{hasExpiredPreview ? 'Your 7-day preview has ended.' : 'Begin your free preview.'}</h1>
         <p>
-          {access.hasTrialStarted
-            ? 'Your seven-day preview has ended. Unlock the reader with a one-time purchase to continue studying.'
+          {hasExpiredPreview
+            ? 'Unlock lifetime access for $12, or verify the email used for a completed Stripe purchase.'
             : 'Create a free preview account before entering the reader.'}
         </p>
 
-        {access.hasTrialStarted ? (
+        {hasExpiredPreview ? (
           <PaymentActions email={access.email} onCheckout={onCheckout} onConfirmPurchase={onConfirmPurchase} />
         ) : (
           <AccessForm defaultEmail={access.email} onStartTrial={onStartTrial} />
@@ -48,8 +50,9 @@ function PaymentActions({ email, onCheckout, onConfirmPurchase }) {
   return (
     <div className="access-payment-actions">
       <button className="access-primary" onClick={onCheckout}>Pay $12 on Stripe</button>
-      <p>After Stripe confirms your payment, return here and verify the same email used at checkout.</p>
+      <p>After Stripe confirms your payment, return to this screen and verify the same email used at checkout.</p>
       <form className="activation-form" onSubmit={handleSubmit}>
+        <h2>Already paid?</h2>
         <label>
           <span>Purchase email</span>
           <input

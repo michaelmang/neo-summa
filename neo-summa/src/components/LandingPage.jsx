@@ -9,6 +9,7 @@ const FEATURE_ROWS = [
 
 export default function LandingPage({ access, checkoutNotice, onStartTrial, onOpenApp, onCheckout }) {
   const [email, setEmail] = useState(access.email || '');
+  const accessMessage = getAccessMessage(access);
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -23,9 +24,7 @@ export default function LandingPage({ access, checkoutNotice, onStartTrial, onOp
           <small>Neo Summa Reader</small>
         </button>
         <div className="landing-nav-actions">
-          {access.isTrialActive || access.isPurchased ? (
-            <button className="landing-link-button" onClick={onOpenApp}>Open App</button>
-          ) : null}
+          <button className="landing-link-button" onClick={onOpenApp}>Open App</button>
           <button className="landing-link-button" onClick={onCheckout}>Unlock for $12</button>
         </div>
       </nav>
@@ -40,6 +39,11 @@ export default function LandingPage({ access, checkoutNotice, onStartTrial, onOp
             a right-hand reference panel.
           </p>
 
+          <div className={`trial-status ${accessMessage.tone}`}>
+            <strong>{accessMessage.title}</strong>
+            <span>{accessMessage.detail}</span>
+          </div>
+
           <form className="trial-form" onSubmit={handleSubmit}>
             <label>
               <span>Email</span>
@@ -51,7 +55,7 @@ export default function LandingPage({ access, checkoutNotice, onStartTrial, onOp
                 placeholder="you@example.com"
               />
             </label>
-            <button type="submit">Begin 7-Day Preview</button>
+            <button type="submit">{access.hasTrialStarted ? 'Continue Preview' : 'Begin 7-Day Preview'}</button>
           </form>
           {checkoutNotice ? (
             <p className="checkout-notice">Stripe checkout is not configured yet. Add a Checkout link or backend endpoint in <code>VITE_STRIPE_CHECKOUT_URL</code>.</p>
@@ -95,4 +99,36 @@ export default function LandingPage({ access, checkoutNotice, onStartTrial, onOp
       </section>
     </main>
   );
+}
+
+function getAccessMessage(access) {
+  if (access.isPurchased) {
+    return {
+      tone: 'purchased',
+      title: 'Lifetime access is active',
+      detail: 'Open the app and continue reading.'
+    };
+  }
+
+  if (access.isTrialActive) {
+    return {
+      tone: 'active',
+      title: `${access.daysRemaining} preview day${access.daysRemaining === 1 ? '' : 's'} remaining`,
+      detail: 'No card required during the preview. Unlock lifetime access for $12 when it ends.'
+    };
+  }
+
+  if (access.hasTrialStarted) {
+    return {
+      tone: 'expired',
+      title: 'Your preview has ended',
+      detail: 'Open the app to verify a completed purchase or unlock lifetime access.'
+    };
+  }
+
+  return {
+    tone: 'fresh',
+    title: 'Start with a 7-day preview',
+    detail: 'Use the full reader first. Pay once only if it becomes useful.'
+  };
 }

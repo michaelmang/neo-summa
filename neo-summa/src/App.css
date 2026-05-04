@@ -121,6 +121,12 @@ html, body, #root { height: 100%; background: var(--bg-primary); color: var(--te
 .trial-form.compact button { width: 100%; }
 .trial-note, .checkout-notice { max-width: 560px; margin-top: 0.62rem; color: #756f66; font-size: 0.74rem; line-height: 1.5; }
 .checkout-notice code { padding: 0.08rem 0.22rem; border-radius: 3px; background: rgba(29,27,24,0.08); color: #473d33; }
+.trial-status { max-width: 560px; margin-top: 1.25rem; padding: 0.7rem 0.8rem; border: 1px solid rgba(29,27,24,0.16); border-left: 3px solid #9c5d27; border-radius: var(--radius-sm); background: rgba(255,255,255,0.36); }
+.trial-status strong, .trial-status span { display: block; font-family: var(--font-ui); }
+.trial-status strong { color: #2d2924; font-size: 0.76rem; font-weight: 900; line-height: 1.35; }
+.trial-status span { margin-top: 0.12rem; color: #756f66; font-size: 0.72rem; line-height: 1.45; }
+.trial-status.purchased { border-left-color: #4c8a5f; }
+.trial-status.expired { border-left-color: #9a321e; }
 .landing-reader-preview { border: 1px solid rgba(29,27,24,0.18); border-radius: var(--radius); background: #201f1d; color: var(--text-primary); padding: 1.1rem; box-shadow: 0 22px 60px rgba(29,27,24,0.16); }
 .preview-topline { color: var(--accent-light); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.04em; }
 .landing-reader-preview h2 { margin: 0.75rem 0 1rem; padding-bottom: 0.85rem; border-bottom: 1px solid var(--border); color: var(--text-primary); font-family: var(--font-body); font-size: 1.35rem; font-weight: 500; line-height: 1.2; }
@@ -147,6 +153,7 @@ html, body, #root { height: 100%; background: var(--bg-primary); color: var(--te
 .access-payment-actions .access-primary { margin-top: 0; }
 .access-payment-actions p { margin-top: 0.62rem; color: #756f66; font-size: 0.74rem; line-height: 1.5; }
 .activation-form { display: grid; gap: 0.55rem; margin-top: 0.8rem; }
+.activation-form h2 { color: #2d2924; font-size: 0.82rem; font-weight: 900; line-height: 1.35; }
 .activation-form label { display: flex; flex-direction: column; gap: 0.28rem; }
 .activation-form span { color: #8a4f21; font-size: 0.62rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase; }
 .activation-form input { width: 100%; border: 1px solid rgba(29,27,24,0.24); border-radius: var(--radius-sm); background: #fffdf8; color: #1d1b18; padding: 0.56rem 0.65rem; font: inherit; font-size: 0.82rem; outline: none; }
