@@ -658,10 +658,18 @@ const READING_MODES = [
 export default function ArticleView({ article, onNavigate, resolveArticle, previousArticle, nextArticle, adjacentContext, questionMeta, partNames, corpusData, bibleData, onOpenReference }) {
   const partName = partNames[article.part] || article.part;
   const [readingMode, setReadingMode] = useState('full');
+  const [shareStatus, setShareStatus] = useState('');
   const showReaderContext = readingMode === 'full';
   const showObjections = !['respondeo', 'answer-replies'].includes(readingMode);
   const showRepliesOnly = readingMode === 'answer-replies';
   const showSedContra = !['respondeo', 'answer-replies'].includes(readingMode);
+
+  async function copyShareLink() {
+    const shareUrl = `${window.location.origin}/share/articles/${article.part}/${article.question}/${article.article}`;
+    await navigator.clipboard.writeText(shareUrl);
+    setShareStatus('Copied');
+    window.setTimeout(() => setShareStatus(''), 1500);
+  }
 
   return (
     <div className="article-view">
@@ -674,6 +682,11 @@ export default function ArticleView({ article, onNavigate, resolveArticle, previ
           <span>Article {article.article}</span>
         </div>
         <div className="article-nav-arrows">
+          <button
+            className="nav-arrow"
+            onClick={copyShareLink}
+            aria-label="Copy article share link"
+          >{shareStatus || 'Share'}</button>
           <button
             className="nav-arrow"
             onClick={() => previousArticle && onNavigate(previousArticle.part, previousArticle.question, previousArticle.article)}

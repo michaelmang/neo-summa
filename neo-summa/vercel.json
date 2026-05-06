@@ -1,6 +1,8 @@
 {
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/:path*" },
+    { "source": "/share/articles/:part/:question/:article", "destination": "/api/share?part=:part&question=:question&article=:article" },
+    { "source": "/share", "destination": "/api/share" },
     { "source": "/:path*", "destination": "/index.html" }
   ]
 }
