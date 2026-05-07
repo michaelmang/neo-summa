@@ -11,20 +11,29 @@ export default function handler(req, res) {
 }
 
 function renderOgSvg(meta) {
-  const titleLines = wrapText(meta.title.replace(/\s+\|\s+Neo Summa Reader$/, ''), 34, 3);
-  const descriptionLines = wrapText(meta.description, 64, 3);
+  const titleLines = wrapText(meta.title.replace(/\s+\|\s+Neo Summa Reader$/, ''), 36, 3);
+  const descriptionLines = wrapText(meta.description, 68, 3);
+  const titleStartY = titleLines.length > 2 ? 212 : 236;
+  const descriptionStartY = titleStartY + titleLines.length * 58 + 54;
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="paper-shadow" x="-10%" y="-14%" width="120%" height="130%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity="0.28"/>
+    </filter>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFF9EC"/>
+      <stop offset="100%" stop-color="#F3EBDD"/>
+    </linearGradient>
+  </defs>
   <rect width="1200" height="630" fill="#1F1C17"/>
-  <rect x="48" y="48" width="1104" height="534" fill="#F4F0E7"/>
-  <rect x="84" y="84" width="1032" height="462" fill="#FFF9EC" stroke="#D4C4AC" stroke-width="2"/>
-  <path d="M126 139H1074" stroke="#B9864E" stroke-width="3"/>
-  <text x="126" y="125" fill="#8A4F21" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="800" letter-spacing="4">${escapeXml(meta.label.toUpperCase())}</text>
-  ${titleLines.map((line, index) => `<text x="126" y="${235 + index * 64}" fill="#17130F" font-family="Georgia, serif" font-size="56" font-weight="600">${escapeXml(line)}</text>`).join('')}
-  ${descriptionLines.map((line, index) => `<text x="126" y="${432 + index * 34}" fill="#5F594F" font-family="Inter, Arial, sans-serif" font-size="28">${escapeXml(line)}</text>`).join('')}
-  <text x="126" y="527" fill="#8A4F21" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="800">Neo Summa Reader</text>
-  <text x="840" y="527" fill="#8A4F21" font-family="Georgia, serif" font-size="56" font-weight="600">Summa</text>
+  <rect x="36" y="36" width="1128" height="558" fill="#EFE7D8" filter="url(#paper-shadow)"/>
+  <rect x="72" y="72" width="1056" height="486" fill="url(#paper)" stroke="#D3C4AA" stroke-width="2"/>
+  <path d="M116 134H1084" stroke="#B9864E" stroke-width="3"/>
+  <text x="116" y="118" fill="#8A4F21" font-family="Inter, system-ui, sans-serif" font-size="29" font-weight="800" letter-spacing="5">${escapeXml(meta.label.toUpperCase())}</text>
+  ${titleLines.map((line, index) => `<text x="116" y="${titleStartY + index * 58}" fill="#17130F" font-family="Georgia, serif" font-size="54" font-weight="600">${escapeXml(line)}</text>`).join('')}
+  ${descriptionLines.map((line, index) => `<text x="116" y="${descriptionStartY + index * 34}" fill="#5F594F" font-family="Inter, system-ui, sans-serif" font-size="27">${escapeXml(line)}</text>`).join('')}
 </svg>`;
 }
 

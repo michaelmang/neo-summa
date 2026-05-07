@@ -250,7 +250,7 @@ function AuthorityList({ authorities = [] }) {
               data-tooltip={getAuthorityTooltip(authority)}
               aria-label={`${authority.name} appears ${authority.count} times`}
             >
-              {' '}({authority.count})
+              ({authority.count})
             </span>
           ) : null}
           {expandedAuthority === authority.name ? (

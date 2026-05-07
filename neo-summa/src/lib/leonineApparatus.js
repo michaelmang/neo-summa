@@ -1,6 +1,37 @@
 const ROMAN_VALUES = { i: 1, v: 5, x: 10, l: 50, c: 100, d: 500, m: 1000 };
+const SENTENCES_AVAILABLE = new Set([
+  'Sent1d3q1a1.htm',
+  'Sent1d8q4a1.htm',
+  'Sent2d43q1a1.htm',
+  'Sent2d43q1a2.htm',
+  'Sent2d43q1a3.htm',
+  'Sent2d43q1a4.htm',
+  'Sent2d43q1a5.htm',
+  'Sent2d43q1a6.htm',
+  'Sent2d43q1proemium.htm',
+  'Sent4d8q1a1.htm',
+  'Sent4d8q1a2.htm',
+  'Sent4d8q1a3.htm',
+  'Sent4d8q1a4.htm',
+  'Sent4d15q3a1.htm',
+  'Sent4d15q3a2.htm',
+  'Sent4d15q3a3.htm',
+  'Sent4d15q3a4.htm',
+  'Sentences.htm',
+  'Sentences1.htm',
+  'Sentences2.htm',
+  'Sentences3.htm',
+  'Sentences4.htm'
+]);
 
 const THOMAS_WORKS = [
+  {
+    id: 'sentences',
+    title: 'Commentary on the Sentences',
+    pattern: /\b(?:I|II|III|IV)\s+Sent\./i,
+    labelPattern: /\b(I|II|III|IV)\s+Sent\.\s*,?\s*(?:(Prol(?:ogue)?\.?|Prologue)\s*,?\s*(?:art|a)\.?\s*([^,;•*-]+)(?:,\s*(?:qu|q)\.?\s*([^;•*-]+))?|dist\.?\s*([ivxlcdm\d]+)\s*,\s*(?:qu|q)\.?\s*([ivxlcdm\d]+)\s*,\s*(?:art|a)\.?\s*([^;•*-]+))/i,
+    getRefs: getSentencesRefs
+  },
   {
     id: 'scg',
     title: 'Summa Contra Gentiles',
@@ -96,7 +127,10 @@ export function parseLeonineCitations(note = '') {
   const cleaned = cleanNote(note);
   return cleaned
     .split(';')
-    .map(segment => parseCitationSegment(segment.trim()))
+    .flatMap(segment => {
+      const citation = parseCitationSegment(segment.trim());
+      return Array.isArray(citation) ? citation : [citation];
+    })
     .filter(Boolean);
 }
 
@@ -133,6 +167,15 @@ function parseCitationSegment(segment) {
   for (const work of THOMAS_WORKS) {
     const match = segment.match(work.labelPattern);
     if (!match) continue;
+    if (work.getRefs) {
+      return work.getRefs(match, segment).map(ref => ({
+        type: 'thomas',
+        workId: work.id,
+        workTitle: work.title,
+        raw: segment,
+        ...ref
+      }));
+    }
     return {
       type: 'thomas',
       workId: work.id,
@@ -173,13 +216,13 @@ function cleanNote(note) {
     .replace(/\br\s*II["']?/gi, 'I-II')
     .replace(/\bI\*\s*II["']?/gi, 'I-II')
     .replace(/\bII\*\s*II["']?/gi, 'II-II')
-    .replace(/\bI['"]?\s*II['"]?/gi, 'I-II')
-    .replace(/\bII['"]?\s*II['"]?/gi, 'II-II')
+    .replace(/\bI['"]?\s+II['"]?\b/gi, 'I-II')
+    .replace(/\bII['"]?\s+II['"]?\b/gi, 'II-II')
     .replace(/\bqu[,.\s]+n\b/gi, 'q. 2')
-    .replace(/\bqu[,.\s]+/gi, 'q. ')
-    .replace(/\bqu\.\s*/gi, 'q. ')
-    .replace(/\bart[,.\s]+/gi, 'a. ')
-    .replace(/\bart\.\s*/gi, 'a. ')
+    .replace(/\bqu[*"']?[,.\s]+/gi, 'q. ')
+    .replace(/\bqu[*"']?\.\s*/gi, 'q. ')
+    .replace(/\bart[*"']?[,.\s]+/gi, 'a. ')
+    .replace(/\bart[*"']?\.\s*/gi, 'a. ')
     .replace(/\bcap[,.\s]+/gi, 'cap. ')
     .replace(/\bcap\.\s*/gi, 'cap. ')
     .replace(/\bdist[,.\s]+/gi, 'dist. ')
@@ -209,6 +252,10 @@ function formatPlainCitation(segment) {
       .replace(/\bII\s+Cont\.\s*Gent\./gi, 'Summa Contra Gentiles II')
       .replace(/\bIII\s+Cont\.\s*Gent\./gi, 'Summa Contra Gentiles III')
       .replace(/\bIV\s+Cont\.\s*Gent\./gi, 'Summa Contra Gentiles IV')
+      .replace(/\bI\s+Sent\./gi, 'Commentary on the Sentences I')
+      .replace(/\bII\s+Sent\./gi, 'Commentary on the Sentences II')
+      .replace(/\bIII\s+Sent\./gi, 'Commentary on the Sentences III')
+      .replace(/\bIV\s+Sent\./gi, 'Commentary on the Sentences IV')
       .replace(/\bDe\s+Verit\./gi, 'Disputed Questions on Truth')
       .replace(/\bDe\s+Pot\./gi, 'Disputed Questions on the Power of God')
       .replace(/\bCont\.\s*Gent\./gi, 'Summa Contra Gentiles')
@@ -256,6 +303,46 @@ function referenceNumbers(raw) {
 
 function primaryReferenceRange(raw = '') {
   return raw.split(/\s*,?\s+(?:ad|in)\b/i)[0];
+}
+
+function getSentencesRefs(match) {
+  const book = romanToInt(match[1]);
+  const isPrologue = Boolean(match[2]);
+
+  if (isPrologue) {
+    return getNumbers(match[3]).map(article => ({
+      label: `Commentary on the Sentences ${bookRoman(book)}, Prologue, a. ${article}${match[4] ? `, q. ${firstNumber(match[4])}` : ''}`,
+      path: '/thomas/source/Sentences.htm',
+      anchor: article,
+      anchors: [article]
+    }));
+  }
+
+  const distinction = formatSentencesNumber(match[5]);
+  const question = formatSentencesNumber(match[6]);
+  const [articleRange, subQuestionRange] = match[7].split(/\s*,\s*(?:qu|q)\.\s*/i);
+  const subQuestion = subQuestionRange ? firstNumber(subQuestionRange) : null;
+
+  return getNumbers(articleRange).map(article => {
+    const file = `Sent${book}d${distinction}q${question}a${article}.htm`;
+    const hasFile = SENTENCES_AVAILABLE.has(file);
+    return {
+      label: `Commentary on the Sentences ${bookRoman(book)}, d. ${distinction}, q. ${question}, a. ${article}${subQuestion ? `, subquestion ${subQuestion}` : ''}`,
+      path: hasFile ? `/thomas/source/${file}` : `/thomas/source/Sentences${book}.htm`,
+      anchor: hasFile ? null : distinction,
+      anchors: hasFile ? [] : [distinction]
+    };
+  });
+}
+
+function bookRoman(book) {
+  return ['I', 'II', 'III', 'IV'][book - 1] || book;
+}
+
+function formatSentencesNumber(raw = '') {
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === 'm') return 3;
+  return formatNumber(raw);
 }
 
 function getNumbers(raw = '') {

@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { formatQuestionTitle } from '../lib/questionTitles';
 
+const FEEDBACK_URL = 'https://github.com/michaelmang/neo-summa/issues/new';
+
 function getAuthorityCount(authorityStats = {}) {
   return new Set([
     ...(authorityStats.answered || []).map(authority => authority.name),
@@ -9,7 +11,7 @@ function getAuthorityCount(authorityStats = {}) {
   ]).size;
 }
 
-export default function Sidebar({ data, selected, view, onSelect, onSelectQuestion, onShowAuthorities, onShowCatalog, onShowSearch, searchArticles, partNames, partScopes }) {
+export default function Sidebar({ data, selected, view, onSelect, onSelectQuestion, onShowAuthorities, onShowCatalog, onShowParallels, onShowSearch, searchArticles, partNames, partScopes }) {
   const [search, setSearch] = useState('');
   const [expandedParts, setExpandedParts] = useState({ FP: true, FS: false, SS: false, TP: false, XP: false });
   const [expandedQuestions, setExpandedQuestions] = useState({});
@@ -93,6 +95,13 @@ export default function Sidebar({ data, selected, view, onSelect, onSelectQuesti
         >
           <span>Question Catalog</span>
           <span>{data.meta.questions.length} questions</span>
+        </button>
+        <button
+          className={`sidebar-library-btn ${view === 'parallels' ? 'active' : ''}`}
+          onClick={() => { setSearch(''); onShowParallels(); }}
+        >
+          <span>Parallel Passages</span>
+          <span>{data.meta.leonineApparatusArticles} articles</span>
         </button>
         <button
           className={`sidebar-library-btn ${view === 'search' ? 'active' : ''}`}
@@ -187,6 +196,9 @@ export default function Sidebar({ data, selected, view, onSelect, onSelectQuesti
           })}
         </nav>
       )}
+      <div className="sidebar-feedback">
+        <a href={FEEDBACK_URL} target="_blank" rel="noreferrer">Report a feature or issue</a>
+      </div>
     </aside>
   );
 }

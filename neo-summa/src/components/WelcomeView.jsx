@@ -14,7 +14,7 @@ function getPartRows(data, partNames, partScopes) {
   }).filter(row => row.articleCount > 0);
 }
 
-export default function WelcomeView({ data, partNames, partScopes, onNavigate, onShowAuthorities, onShowCatalog, onShowSearch }) {
+export default function WelcomeView({ data, partNames, partScopes, onNavigate, onShowAuthorities, onShowCatalog, onShowParallels, onShowSearch }) {
   const partRows = getPartRows(data, partNames, partScopes);
   const firstArticle = partRows[0]?.firstArticle;
 
@@ -39,6 +39,9 @@ export default function WelcomeView({ data, partNames, partScopes, onNavigate, o
           </button>
           <button className="welcome-secondary-action" onClick={onShowCatalog}>
             Browse Question Catalog
+          </button>
+          <button className="welcome-secondary-action" onClick={onShowParallels}>
+            Browse Parallel Passages
           </button>
           <button className="welcome-secondary-action" onClick={onShowSearch}>
             Open Advanced Search

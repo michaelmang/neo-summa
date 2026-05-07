@@ -3,7 +3,7 @@ import { useSumma } from './hooks/useSumma';
 import { PART_NAMES, PART_ORDER, PART_SCOPES } from './config/summa';
 import { canAccessApp, getAccessState, getCheckoutUrl, isLocalBypassAvailable, markPurchased, startTrial, verifyPurchasedAccess } from './lib/access';
 import { getAdjacentArticles, getOrderedArticles } from './lib/articles';
-import { AUTHORITIES_PATH, CATALOG_PATH, HOME_PATH, SEARCH_PATH, articlePath, parseRoute, questionPath } from './lib/routing';
+import { AUTHORITIES_PATH, CATALOG_PATH, HOME_PATH, PARALLELS_PATH, SEARCH_PATH, articlePath, parseRoute, questionPath } from './lib/routing';
 import Sidebar from './components/Sidebar';
 import AccessGate from './components/AccessGate';
 import AdvancedSearch from './components/AdvancedSearch';
@@ -11,6 +11,7 @@ import ArticleView from './components/ArticleView';
 import AuthorityIndex from './components/AuthorityIndex';
 import ErrorBoundary from './components/ErrorBoundary';
 import LandingPage from './components/LandingPage';
+import ParallelPassagesIndex from './components/ParallelPassagesIndex';
 import QuestionCatalogue from './components/QuestionCatalogue';
 import QuestionOverview from './components/QuestionOverview';
 import ReferencePanel from './components/ReferencePanel';
@@ -24,7 +25,7 @@ export default function App() {
   const [checkoutNotice, setCheckoutNotice] = useState(false);
   const canBypassPaywall = useMemo(() => isLocalBypassAvailable(), []);
   const [hasAppHistory, setHasAppHistory] = useState(false);
-  const [referencePanel, setReferencePanel] = useState(null);
+  const [referencePanelState, setReferencePanelState] = useState({ current: null, history: [] });
 
   useEffect(() => {
     const handlePopState = () => setRoute(parseRoute(window.location.pathname));
@@ -103,6 +104,42 @@ export default function App() {
       pushRoute(articlePath(part, question, article));
     }
   }, [getArticle, pushRoute]);
+
+  const openReference = useCallback((reference) => {
+    setReferencePanelState(state => {
+      if (!reference) {
+        return { current: null, history: [] };
+      }
+
+      if (!state.current) {
+        return { current: reference, history: [] };
+      }
+
+      if (getReferenceKey(state.current) === getReferenceKey(reference)) {
+        return state;
+      }
+
+      return {
+        current: reference,
+        history: [...state.history, state.current]
+      };
+    });
+  }, []);
+
+  const closeReference = useCallback(() => {
+    setReferencePanelState({ current: null, history: [] });
+  }, []);
+
+  const goBackReference = useCallback(() => {
+    setReferencePanelState(state => {
+      if (!state.history.length) return state;
+
+      return {
+        current: state.history[state.history.length - 1],
+        history: state.history.slice(0, -1)
+      };
+    });
+  }, []);
 
   const goHome = useCallback(() => pushRoute(HOME_PATH), [pushRoute]);
 
@@ -188,6 +225,7 @@ export default function App() {
           onSelectQuestion={(part, question) => pushRoute(questionPath(part, question))}
           onShowAuthorities={() => pushRoute(AUTHORITIES_PATH)}
           onShowCatalog={() => pushRoute(CATALOG_PATH)}
+          onShowParallels={() => pushRoute(PARALLELS_PATH)}
           onShowSearch={() => pushRoute(SEARCH_PATH)}
           searchArticles={searchArticles}
           partNames={PART_NAMES}
@@ -208,28 +246,43 @@ export default function App() {
               onBack={goBack}
               onShowAuthorities={() => pushRoute(AUTHORITIES_PATH)}
               onShowCatalog={() => pushRoute(CATALOG_PATH)}
+              onShowParallels={() => pushRoute(PARALLELS_PATH)}
               onShowSearch={() => pushRoute(SEARCH_PATH)}
               onShowQuestion={(part, question) => pushRoute(questionPath(part, question))}
               onAdvancedSearch={advancedSearchArticles}
               partNames={PART_NAMES}
               partOrder={PART_ORDER}
               getArticle={getArticle}
-              onOpenReference={setReferencePanel}
+              onOpenReference={openReference}
             />
           </ErrorBoundary>
         </main>
         <ReferencePanel
-          reference={referencePanel}
+          reference={referencePanelState.current}
           corpusData={corpusData}
-          onOpenReference={setReferencePanel}
-          onClose={() => setReferencePanel(null)}
+          bibleData={bibleData}
+          canGoBack={referencePanelState.history.length > 0}
+          onOpenReference={openReference}
+          onBack={goBackReference}
+          onClose={closeReference}
         />
       </div>
     </div>
   );
 }
 
-function MainView({ data, corpusData, bibleData, route, selected, adjacentArticles, orderedArticles, onNavigate, onBack, onShowAuthorities, onShowCatalog, onShowSearch, onShowQuestion, onAdvancedSearch, partNames, partOrder, getArticle, onOpenReference }) {
+function getReferenceKey(reference) {
+  if (!reference) return '';
+  if (reference.type === 'imported') return `imported:${reference.article?.id || reference.label}`;
+  if (reference.type === 'thomas') return `thomas:${reference.path || ''}#${reference.anchor || ''}`;
+  if (reference.type === 'bible') {
+    return `bible:${reference.book}:${reference.chapter}:${reference.startVerse}:${reference.endVerse}`;
+  }
+
+  return `${reference.type || 'reference'}:${reference.label || ''}`;
+}
+
+function MainView({ data, corpusData, bibleData, route, selected, adjacentArticles, orderedArticles, onNavigate, onBack, onShowAuthorities, onShowCatalog, onShowParallels, onShowSearch, onShowQuestion, onAdvancedSearch, partNames, partOrder, getArticle, onOpenReference }) {
   if (route.type === 'authorities') {
     return (
       <AuthorityIndex
@@ -247,6 +300,19 @@ function MainView({ data, corpusData, bibleData, route, selected, adjacentArticl
         partNames={partNames}
         onNavigate={onNavigate}
         onShowQuestion={onShowQuestion}
+        onBack={onBack}
+      />
+    );
+  }
+
+  if (route.type === 'parallels') {
+    return (
+      <ParallelPassagesIndex
+        data={data}
+        partNames={partNames}
+        resolveArticle={getArticle}
+        onNavigate={onNavigate}
+        onOpenReference={onOpenReference}
         onBack={onBack}
       />
     );
@@ -313,6 +379,7 @@ function MainView({ data, corpusData, bibleData, route, selected, adjacentArticl
       onNavigate={onNavigate}
       onShowAuthorities={onShowAuthorities}
       onShowCatalog={onShowCatalog}
+      onShowParallels={onShowParallels}
       onShowSearch={onShowSearch}
       onShowQuestion={onShowQuestion}
     />

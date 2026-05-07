@@ -10,10 +10,12 @@ const WORK_ALIASES = [
   { pattern: /^perihermeneias$/i, workId: 'aristotle-peri-hermeneias' }
 ];
 
-export const IMPORTED_WORK_FIRST_PATTERN = /\b((?:Nicomachean\s+)?Ethic(?:s)?\.?|Metaph(?:ys)?\.?|Metaphysics|Phys\.?|Physics|De\s+Anima|De\s+C[ao]elo|Peri\s*Hermeneias|Perihermeneias)\s+([ivxlcdm]+)(?:,\s*((?:\d+\s*,?\s*)+))?/gi;
-export const IMPORTED_BOOK_FIRST_PATTERN = /\b([ivxlcdm]+)\s+(Ethic(?:s)?\.?|Metaph(?:ys)?\.?|Metaphysics|Phys\.?|Physics|De\s+Anima|De\s+C[ao]elo|Peri\s*Hermeneias|Perihermeneias)\b/gi;
+export const IMPORTED_WORK_FIRST_PATTERN = /\b((?:Nicomachean\s+)?Ethic(?:s)?\.?|Metaph(?:ys)?\.?|Metaphysics|Phys\.?|Physics|De\s+Anima|De\s+C[ao]elo|Peri\s*Hermeneias|Perihermeneias)\s+([ivxlcdm]+|\d+)(?:[,.]\s*((?:\d+\s*,?\s*)+))?/gi;
+export const IMPORTED_BOOK_FIRST_PATTERN = /\b([ivxlcdm]+|\d+)\s+(Ethic(?:s)?\.?|Metaph(?:ys)?\.?|Metaphysics|Phys\.?|Physics|De\s+Anima|De\s+C[ao]elo|Peri\s*Hermeneias|Perihermeneias)\b/gi;
 
 function romanToNumber(value = '') {
+  if (/^\d+$/.test(value)) return Number(value);
+
   const roman = value.toUpperCase();
   const numerals = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
   let total = 0;

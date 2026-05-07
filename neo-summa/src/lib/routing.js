@@ -3,6 +3,7 @@ export const APP_BASE_PATH = '/app';
 export const HOME_PATH = APP_BASE_PATH;
 export const AUTHORITIES_PATH = `${APP_BASE_PATH}/authorities`;
 export const CATALOG_PATH = `${APP_BASE_PATH}/catalog`;
+export const PARALLELS_PATH = `${APP_BASE_PATH}/parallels`;
 export const SEARCH_PATH = `${APP_BASE_PATH}/search`;
 
 export function parseRoute(pathname) {
@@ -37,6 +38,10 @@ export function parseRoute(pathname) {
 
   if (/^\/authorities\/?$/.test(appPath)) {
     return { type: 'authorities' };
+  }
+
+  if (/^\/parallels\/?$/.test(appPath)) {
+    return { type: 'parallels' };
   }
 
   if (/^\/(?:catalog|questions)\/?$/.test(appPath)) {

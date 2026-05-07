@@ -1,4 +1,15 @@
 import { useEffect, useState } from 'react';
+import {
+  IMPORTED_BOOK_FIRST_PATTERN,
+  IMPORTED_WORK_FIRST_PATTERN,
+  parseImportedCitationMatch,
+  resolveImportedCitation
+} from '../lib/importedCitations';
+import {
+  BIBLE_REF_PATTERN,
+  parseBibleCitationMatch,
+  resolveBibleCitation
+} from '../lib/bibleCitations';
 
 function getReferenceParagraphs(text = '') {
   return text
@@ -15,6 +26,10 @@ function getHtmlParagraphs(html = '', anchor) {
     : null;
   const tableParagraphs = getAnchoredTableParagraphs(anchorElement);
   if (tableParagraphs.length) return tableParagraphs;
+  const followingParagraphs = getFollowingAnchorParagraphs(document, anchorElement);
+  if (followingParagraphs.length) return followingParagraphs;
+  const anchorParagraphs = getAnchorTextParagraphs(anchorElement);
+  if (anchorParagraphs.length) return anchorParagraphs;
 
   const root = anchorElement?.parentElement || document.body;
   const text = root.textContent || document.body.textContent || '';
@@ -26,6 +41,58 @@ function getHtmlParagraphs(html = '', anchor) {
     .map(paragraph => paragraph.trim())
     .filter(Boolean)
     .slice(0, 14);
+}
+
+function getFollowingAnchorParagraphs(document, anchorElement) {
+  if (!anchorElement) return [];
+
+  const nextAnchor = getNextNamedAnchor(document, anchorElement);
+  if (!nextAnchor) return [];
+
+  const range = document.createRange();
+  range.setStartAfter(anchorElement);
+  range.setEndBefore(nextAnchor);
+
+  const container = document.createElement('div');
+  container.append(range.cloneContents());
+
+  const paragraphs = [...container.querySelectorAll('p')]
+    .map(paragraph => cleanHtmlText(paragraph.textContent || ''))
+    .filter(Boolean)
+    .filter(paragraph => !/^ARTICLE\s/i.test(paragraph))
+    .slice(0, 18);
+
+  if (paragraphs.length) return paragraphs;
+
+  return cleanHtmlText(container.textContent || '')
+    .replace(/\s+(?=(?:Article|Sub-question|SOLUTION|ON THE CONTRARY|Ad\s+\d|To the)\b)/g, '\n')
+    .split(/\n+/)
+    .map(paragraph => paragraph.trim())
+    .filter(Boolean)
+    .slice(0, 18);
+}
+
+function getNextNamedAnchor(document, anchorElement) {
+  const anchors = [...document.querySelectorAll('a[name], a[id]')];
+  const currentIndex = anchors.indexOf(anchorElement);
+  if (currentIndex < 0) return null;
+
+  return anchors.slice(currentIndex + 1).find(anchor =>
+    (anchor.getAttribute('name') || anchor.id) !== (anchorElement.getAttribute('name') || anchorElement.id)
+  ) || null;
+}
+
+function getAnchorTextParagraphs(anchorElement) {
+  if (!anchorElement) return [];
+  const text = cleanHtmlText(anchorElement.textContent || '');
+  if (!text) return [];
+
+  return text
+    .replace(/\s+(?=(?:Article|Sub-question|SOLUTION|ON THE CONTRARY|Ad\s+\d|To the)\b)/g, '\n')
+    .split(/\n+/)
+    .map(paragraph => paragraph.trim())
+    .filter(Boolean)
+    .slice(0, 18);
 }
 
 function getAnchoredTableParagraphs(anchorElement) {
@@ -48,6 +115,119 @@ function cleanHtmlText(text = '') {
     .replace(/\s+/g, ' ')
     .replace(/\[\s*(\d+)\s*\]/g, '[$1]')
     .trim();
+}
+
+function renderImportedRef(match, corpusData, onOpenReference, keyPrefix) {
+  const type = match.type;
+  const citation = parseImportedCitationMatch(match.match, type === 'imported-work-first' ? 'work-first' : 'book-first');
+  const target = resolveImportedCitation(corpusData, citation);
+  const label = match.match[0];
+
+  if (!target?.source?.href) return label;
+
+  return (
+    <button
+      key={keyPrefix}
+      type="button"
+      className="inline-citation-link inline-imported-citation quick-tooltip"
+      onClick={() => onOpenReference?.({
+        type: 'imported',
+        label,
+        article: target
+      })}
+      data-tooltip={`${target.workTitle} · ${target.headingLabel || `Lecture ${target.article}`}: ${target.title}`}
+      aria-label={`${label}: ${target.workTitle}, ${target.title}`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function renderBibleRef(match, bibleData, onOpenReference, keyPrefix) {
+  const citation = parseBibleCitationMatch(match.match);
+  const target = resolveBibleCitation(bibleData, citation);
+  const label = match.match[0];
+
+  if (!target) return label;
+
+  return (
+    <button
+      key={keyPrefix}
+      type="button"
+      className="inline-citation-link inline-bible-citation quick-tooltip"
+      onClick={() => onOpenReference?.({
+        type: 'bible',
+        label,
+        ...target
+      })}
+      data-tooltip={`${target.book} ${target.chapter}:${target.startVerse}${target.endVerse !== target.startVerse ? `-${target.endVerse}` : ''}`}
+      aria-label={`${label}: ${target.book} ${target.chapter}`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function getPanelReferenceMatches(text) {
+  const matches = [
+    ...[...text.matchAll(IMPORTED_WORK_FIRST_PATTERN)].map(match => ({
+      match,
+      type: 'imported-work-first',
+      index: match.index,
+      end: match.index + match[0].length
+    })),
+    ...[...text.matchAll(IMPORTED_BOOK_FIRST_PATTERN)].map(match => ({
+      match,
+      type: 'imported-book-first',
+      index: match.index,
+      end: match.index + match[0].length
+    })),
+    ...[...text.matchAll(BIBLE_REF_PATTERN)].map(match => ({
+      match,
+      type: 'bible',
+      index: match.index,
+      end: match.index + match[0].length
+    }))
+  ].sort((a, b) => a.index - b.index || b.end - a.end);
+
+  const accepted = [];
+  let cursor = -1;
+
+  for (const match of matches) {
+    if (match.index < cursor) continue;
+    accepted.push(match);
+    cursor = match.end;
+  }
+
+  return accepted;
+}
+
+function LinkedReferenceText({ text, corpusData, bibleData, onOpenReference }) {
+  if (!text) return null;
+
+  const nodes = [];
+  let lastIndex = 0;
+
+  for (const entry of getPanelReferenceMatches(text)) {
+    const { index, end, type } = entry;
+    const label = entry.match[0];
+
+    if (index > lastIndex) {
+      nodes.push(text.slice(lastIndex, index));
+    }
+
+    nodes.push(type === 'bible'
+      ? renderBibleRef(entry, bibleData, onOpenReference, `${index}-${label}`)
+      : renderImportedRef(entry, corpusData, onOpenReference, `${index}-${label}`));
+
+    lastIndex = end;
+  }
+
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex));
+  }
+
+  return nodes;
 }
 
 function getReferenceScope(corpusData, article) {
@@ -103,7 +283,7 @@ function ReferenceNavigator({ article, corpusData, onOpenReference, position }) 
   );
 }
 
-function ImportedWorkReference({ article, corpusData, onOpenReference }) {
+function ImportedWorkReference({ article, corpusData, bibleData, onOpenReference }) {
   const paragraphs = getReferenceParagraphs(article.respondeo?.english);
 
   return (
@@ -117,7 +297,9 @@ function ImportedWorkReference({ article, corpusData, onOpenReference }) {
       <ReferenceNavigator article={article} corpusData={corpusData} onOpenReference={onOpenReference} position="top" />
       <div className="reference-panel-paragraphs">
         {paragraphs.map((paragraph, index) => (
-          <p key={`${index}-${paragraph.slice(0, 16)}`}>{paragraph}</p>
+          <p key={`${index}-${paragraph.slice(0, 16)}`}>
+            <LinkedReferenceText text={paragraph} corpusData={corpusData} bibleData={bibleData} onOpenReference={onOpenReference} />
+          </p>
         ))}
       </div>
       <ReferenceNavigator article={article} corpusData={corpusData} onOpenReference={onOpenReference} position="bottom" />
@@ -146,7 +328,7 @@ function BibleReference({ reference }) {
   );
 }
 
-function ThomasWorkReference({ reference }) {
+function ThomasWorkReference({ reference, corpusData, bibleData, onOpenReference }) {
   const referenceKey = `${reference.path}#${reference.anchor || ''}`;
   const [state, setState] = useState({ key: referenceKey, paragraphs: [], error: '' });
   const loading = state.key !== referenceKey;
@@ -188,7 +370,9 @@ function ThomasWorkReference({ reference }) {
       {!loading && state.paragraphs.length ? (
         <div className="reference-panel-paragraphs">
           {state.paragraphs.map((paragraph, index) => (
-            <p key={`${index}-${paragraph.slice(0, 16)}`}>{paragraph}</p>
+            <p key={`${index}-${paragraph.slice(0, 16)}`}>
+              <LinkedReferenceText text={paragraph} corpusData={corpusData} bibleData={bibleData} onOpenReference={onOpenReference} />
+            </p>
           ))}
         </div>
       ) : null}
@@ -196,7 +380,7 @@ function ThomasWorkReference({ reference }) {
   );
 }
 
-export default function ReferencePanel({ reference, onClose, corpusData, onOpenReference }) {
+export default function ReferencePanel({ reference, onClose, corpusData, bibleData, canGoBack = false, onOpenReference, onBack }) {
   if (!reference) return null;
 
   return (
@@ -206,16 +390,23 @@ export default function ReferencePanel({ reference, onClose, corpusData, onOpenR
           <span className="reference-panel-label">Reference</span>
           <strong>{reference.label}</strong>
         </div>
-        <button type="button" className="reference-panel-close" onClick={onClose} aria-label="Close reference panel">
-          Close
-        </button>
+        <div className="reference-panel-actions">
+          {canGoBack ? (
+            <button type="button" className="reference-panel-action" onClick={onBack}>
+              Back
+            </button>
+          ) : null}
+          <button type="button" className="reference-panel-close" onClick={onClose} aria-label="Close reference panel">
+            Close
+          </button>
+        </div>
       </div>
       {reference.type === 'bible' ? (
         <BibleReference reference={reference} />
       ) : reference.type === 'thomas' ? (
-        <ThomasWorkReference reference={reference} />
+        <ThomasWorkReference reference={reference} corpusData={corpusData} bibleData={bibleData} onOpenReference={onOpenReference} />
       ) : (
-        <ImportedWorkReference article={reference.article} corpusData={corpusData} onOpenReference={onOpenReference} />
+        <ImportedWorkReference article={reference.article} corpusData={corpusData} bibleData={bibleData} onOpenReference={onOpenReference} />
       )}
     </aside>
   );
