@@ -1,0 +1,418 @@
+{
+  "generatedFrom": "AquinasOperaOmnia-master/english/summa",
+  "description": "Internal Summa parallels seeded from explicit Cf. cross-references in the source HTML. Entries are bidirectional so either side of the relation can surface the passage.",
+  "passages": {
+    "FP:101:1": [
+      {
+        "part": "FS",
+        "question": 85,
+        "article": 3,
+        "relation": "mentions",
+        "source": "Benziger editorial cross-reference",
+        "note": "(Cf. FS, Question [85], Article [3])"
+      }
+    ],
+    "FP:5:6": [
+      {
+        "part": "SS",
+        "question": 141,
+        "article": 3,
+        "relation": "mentions",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. SS, Question [141] , Article [3] ; SS , Question [145] )"
+      }
+    ],
+    "FP:84:6": [
+      {
+        "part": "FS",
+        "question": 9,
+        "article": 5,
+        "relation": "mentioned-by",
+        "source": "Benziger editorial cross-reference",
+        "note": "(Cf. FP, Question [84] , Articles [6] ,7)"
+      }
+    ],
+    "FP:84:7": [
+      {
+        "part": "FS",
+        "question": 9,
+        "article": 5,
+        "relation": "mentioned-by",
+        "source": "Benziger editorial cross-reference",
+        "note": "(Cf. FP, Question [84] , Articles [6] ,7)"
+      }
+    ],
+    "FS:109:2": [
+      {
+        "part": "TP",
+        "question": 61,
+        "article": 2,
+        "relation": "mentioned-by",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. FS, Question [109] , Article [2] ; FS , Question [114] , Article [2] )"
+      }
+    ],
+    "FS:6:6": [
+      {
+        "part": "XP",
+        "question": 47,
+        "article": 1,
+        "relation": "mentioned-by",
+        "source": "Benziger editorial cross-reference",
+        "note": "(Cf. FS, Question [6] , Article [6] )"
+      }
+    ],
+    "FS:61:4": [
+      {
+        "part": "FS",
+        "question": 65,
+        "article": 1,
+        "relation": "mentioned-by",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. Question [61] , Article [4] , Objection [1])"
+      }
+    ],
+    "FS:61:5": [
+      {
+        "part": "TP",
+        "question": 7,
+        "article": 2,
+        "relation": "mentioned-by",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. FS, Question [61] , Article [5] )"
+      }
+    ],
+    "FS:65:1": [
+      {
+        "part": "FS",
+        "question": 61,
+        "article": 4,
+        "relation": "mentions",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. Question [61] , Article [4] , Objection [1])"
+      }
+    ],
+    "FS:85:3": [
+      {
+        "part": "FP",
+        "question": 101,
+        "article": 1,
+        "relation": "mentioned-by",
+        "source": "Benziger editorial cross-reference",
+        "note": "(Cf. FS, Question [85], Article [3])"
+      }
+    ],
+    "FS:9:5": [
+      {
+        "part": "FP",
+        "question": 84,
+        "article": 6,
+        "relation": "mentions",
+        "source": "Benziger editorial cross-reference",
+        "note": "(Cf. FP, Question [84] , Articles [6] ,7)"
+      },
+      {
+        "part": "FP",
+        "question": 84,
+        "article": 7,
+        "relation": "mentions",
+        "source": "Benziger editorial cross-reference",
+        "note": "(Cf. FP, Question [84] , Articles [6] ,7)"
+      }
+    ],
+    "FS:90:1": [
+      {
+        "part": "SS",
+        "question": 178,
+        "article": 1,
+        "relation": "mentioned-by",
+        "source": "Benziger editorial cross-reference",
+        "note": "(Cf. FS, Question [90] , Article [1] )"
+      }
+    ],
+    "SS:118:8": [
+      {
+        "part": "SS",
+        "question": 153,
+        "article": 5,
+        "relation": "mentioned-by",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. Question [35] , Article [4] , ad 2; Question [118] , Article [8] , ad 1; Question [148] , Article [6] )"
+      }
+    ],
+    "SS:141:3": [
+      {
+        "part": "FP",
+        "question": 5,
+        "article": 6,
+        "relation": "mentioned-by",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. SS, Question [141] , Article [3] ; SS , Question [145] )"
+      }
+    ],
+    "SS:148:6": [
+      {
+        "part": "SS",
+        "question": 153,
+        "article": 5,
+        "relation": "mentioned-by",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. Question [35] , Article [4] , ad 2; Question [118] , Article [8] , ad 1; Question [148] , Article [6] )"
+      }
+    ],
+    "SS:153:5": [
+      {
+        "part": "SS",
+        "question": 35,
+        "article": 4,
+        "relation": "mentions",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. Question [35] , Article [4] , ad 2; Question [118] , Article [8] , ad 1; Question [148] , Article [6] )"
+      },
+      {
+        "part": "SS",
+        "question": 118,
+        "article": 8,
+        "relation": "mentions",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. Question [35] , Article [4] , ad 2; Question [118] , Article [8] , ad 1; Question [148] , Article [6] )"
+      },
+      {
+        "part": "SS",
+        "question": 148,
+        "article": 6,
+        "relation": "mentions",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. Question [35] , Article [4] , ad 2; Question [118] , Article [8] , ad 1; Question [148] , Article [6] )"
+      }
+    ],
+    "SS:178:1": [
+      {
+        "part": "FS",
+        "question": 90,
+        "article": 1,
+        "relation": "mentions",
+        "source": "Benziger editorial cross-reference",
+        "note": "(Cf. FS, Question [90] , Article [1] )"
+      }
+    ],
+    "SS:35:4": [
+      {
+        "part": "SS",
+        "question": 153,
+        "article": 5,
+        "relation": "mentioned-by",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. Question [35] , Article [4] , ad 2; Question [118] , Article [8] , ad 1; Question [148] , Article [6] )"
+      }
+    ],
+    "TP:14:1": [
+      {
+        "part": "TP",
+        "question": 46,
+        "article": 6,
+        "relation": "mentioned-by",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. Question [14] , Article [1] , ad 2; Question [45] , Article [2] )"
+      }
+    ],
+    "TP:45:2": [
+      {
+        "part": "TP",
+        "question": 46,
+        "article": 6,
+        "relation": "mentioned-by",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. Question [14] , Article [1] , ad 2; Question [45] , Article [2] )"
+      }
+    ],
+    "TP:46:6": [
+      {
+        "part": "TP",
+        "question": 14,
+        "article": 1,
+        "relation": "mentions",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. Question [14] , Article [1] , ad 2; Question [45] , Article [2] )"
+      },
+      {
+        "part": "TP",
+        "question": 45,
+        "article": 2,
+        "relation": "mentions",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. Question [14] , Article [1] , ad 2; Question [45] , Article [2] )"
+      }
+    ],
+    "TP:54:4": [
+      {
+        "part": "XP",
+        "question": 82,
+        "article": 1,
+        "relation": "mentioned-by",
+        "source": "Benziger editorial cross-reference",
+        "note": "(Cf. TP, Question [54], Article [4], ad 3)"
+      }
+    ],
+    "TP:61:2": [
+      {
+        "part": "FS",
+        "question": 109,
+        "article": 2,
+        "relation": "mentions",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. FS, Question [109] , Article [2] ; FS , Question [114] , Article [2] )"
+      }
+    ],
+    "TP:7:2": [
+      {
+        "part": "FS",
+        "question": 61,
+        "article": 5,
+        "relation": "mentions",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. FS, Question [61] , Article [5] )"
+      }
+    ],
+    "TP:73:3": [
+      {
+        "part": "TP",
+        "question": 78,
+        "article": 1,
+        "relation": "mentioned-by",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. Question [73] , Article [3] , ad 1)"
+      }
+    ],
+    "TP:78:1": [
+      {
+        "part": "TP",
+        "question": 73,
+        "article": 3,
+        "relation": "mentions",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. Question [73] , Article [3] , ad 1)"
+      }
+    ],
+    "TP:84:6": [
+      {
+        "part": "TP",
+        "question": 88,
+        "article": 2,
+        "relation": "mentioned-by",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. Question [84], Article [6])"
+      }
+    ],
+    "TP:87:3": [
+      {
+        "part": "XP",
+        "question": 8,
+        "article": 3,
+        "relation": "mentioned-by",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. TP, Question [87], Article [3])"
+      }
+    ],
+    "TP:88:2": [
+      {
+        "part": "TP",
+        "question": 84,
+        "article": 6,
+        "relation": "mentions",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. Question [84], Article [6])"
+      }
+    ],
+    "XP:11:1": [
+      {
+        "part": "XP",
+        "question": 23,
+        "article": 1,
+        "relation": "mentioned-by",
+        "source": "Benziger editorial cross-reference",
+        "note": "(Cf. Question [11] , Article [1] , Objection [1])"
+      }
+    ],
+    "XP:23:1": [
+      {
+        "part": "XP",
+        "question": 11,
+        "article": 1,
+        "relation": "mentions",
+        "source": "Benziger editorial cross-reference",
+        "note": "(Cf. Question [11] , Article [1] , Objection [1])"
+      }
+    ],
+    "XP:29:8": [
+      {
+        "part": "XP",
+        "question": 30,
+        "article": 2,
+        "relation": "mentioned-by",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. Question [29] , Article [8] )"
+      }
+    ],
+    "XP:30:2": [
+      {
+        "part": "XP",
+        "question": 29,
+        "article": 8,
+        "relation": "mentions",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. Question [29] , Article [8] )"
+      }
+    ],
+    "XP:47:1": [
+      {
+        "part": "FS",
+        "question": 6,
+        "article": 6,
+        "relation": "mentions",
+        "source": "Benziger editorial cross-reference",
+        "note": "(Cf. FS, Question [6] , Article [6] )"
+      }
+    ],
+    "XP:5:1": [
+      {
+        "part": "XP",
+        "question": 62,
+        "article": 1,
+        "relation": "mentions",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. Sent. iv, D, 1, Question [1] , Article [4] : TP , Question [62] , Article [1] )"
+      }
+    ],
+    "XP:62:1": [
+      {
+        "part": "XP",
+        "question": 5,
+        "article": 1,
+        "relation": "mentioned-by",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. Sent. iv, D, 1, Question [1] , Article [4] : TP , Question [62] , Article [1] )"
+      }
+    ],
+    "XP:8:3": [
+      {
+        "part": "TP",
+        "question": 87,
+        "article": 3,
+        "relation": "mentions",
+        "source": "Benziger editorial cross-reference",
+        "note": "(cf. TP, Question [87], Article [3])"
+      }
+    ],
+    "XP:82:1": [
+      {
+        "part": "TP",
+        "question": 54,
+        "article": 4,
+        "relation": "mentions",
+        "source": "Benziger editorial cross-reference",
+        "note": "(Cf. TP, Question [54], Article [4], ad 3)"
+      }
+    ]
+  }
+}

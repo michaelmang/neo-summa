@@ -10,6 +10,10 @@ import {
   parseBibleCitationMatch,
   resolveBibleCitation
 } from '../lib/bibleCitations';
+import {
+  formatLeonineSource,
+  parseLeonineCitations
+} from '../lib/leonineApparatus';
 
 const INTERNAL_REF_PATTERN = /(?:(FP|FS|SS|TP|XP),\s*)?(?:Question\s+\[(\d+)\]\s*,?\s*)?(Articles?\s+\[(\d+)\](?:\s*(?:,|and)\s*\[?\d+\]?)*)/gi;
 
@@ -344,6 +348,195 @@ function CrossReferenceTable({ article, onNavigate, resolveArticle }) {
             resolveArticle={resolveArticle}
           />
         ))}
+      </tbody>
+    </table>
+  );
+}
+
+function getParallelRelationLabel(relation) {
+  if (relation === 'mentioned-by') return 'Referenced from';
+  return 'References';
+}
+
+function LeonineCitation({ citation, onNavigate, onOpenReference, resolveArticle }) {
+  if (citation.type === 'summa') {
+    return (
+      <>
+        {citation.articles.map((articleNumber, index) => {
+          const targetArticle = resolveArticle?.(citation.part, citation.question, articleNumber);
+
+          return (
+            <span key={`${citation.part}-${citation.question}-${articleNumber}`}>
+              {index > 0 ? <span className="reference-separator">, </span> : null}
+              <button
+                type="button"
+                className="leonine-citation-link quick-tooltip"
+                onClick={() => onNavigate(citation.part, citation.question, articleNumber)}
+                data-tooltip={targetArticle
+                  ? `${citation.part} Q.${citation.question} A.${articleNumber}: ${targetArticle.title}`
+                  : `Go to ${citation.part} Q.${citation.question} A.${articleNumber}`}
+              >
+                {citation.part} Q.{citation.question} A.{articleNumber}
+              </button>
+            </span>
+          );
+        })}
+      </>
+    );
+  }
+
+  if (citation.type === 'thomas') {
+    const anchors = citation.anchors?.length ? citation.anchors : [citation.anchor].filter(Boolean);
+    if (anchors.length > 1) {
+      return (
+        <>
+          {anchors.map((anchor, index) => {
+            const label = getThomasCitationLabel(citation, anchor);
+            return (
+              <span key={`${citation.path}-${anchor}`}>
+                {index > 0 ? <span className="reference-separator">, </span> : null}
+                <ThomasCitationButton
+                  citation={citation}
+                  label={label}
+                  anchor={anchor}
+                  onOpenReference={onOpenReference}
+                />
+              </span>
+            );
+          })}
+        </>
+      );
+    }
+
+    return (
+      <ThomasCitationButton
+        citation={citation}
+        label={citation.label}
+        anchor={citation.anchor}
+        onOpenReference={onOpenReference}
+      />
+    );
+  }
+
+  return <span className="leonine-citation-text">{citation.label}</span>;
+}
+
+function ThomasCitationButton({ citation, label, anchor, onOpenReference }) {
+  return (
+    <button
+      type="button"
+      className="leonine-citation-link leonine-external-link"
+      onClick={() => onOpenReference?.({
+        type: 'thomas',
+        label,
+        workTitle: citation.workTitle,
+        path: citation.path,
+        anchor
+      })}
+    >
+      {label}
+    </button>
+  );
+}
+
+function getThomasCitationLabel(citation, anchor) {
+  const marker = ['scg', 'compendium', 'de-ente'].includes(citation.workId) ? 'c.' : 'a.';
+  const pattern = new RegExp(`${escapeRegExp(marker)}\\s*.*$`, 'i');
+  const prefix = citation.label.match(pattern)
+    ? citation.label.replace(pattern, `${marker} `)
+    : `${citation.label} `;
+
+  return `${prefix}${anchor}`;
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function ScholarlyApparatusTable({ article, onNavigate, onOpenReference, resolveArticle }) {
+  const apparatus = article.leonineApparatus;
+  const passages = article.parallelPassages || [];
+  const [expanded, setExpanded] = useState(false);
+  const citations = apparatus?.note ? parseLeonineCitations(apparatus.note) : [];
+  const summaCitationKeys = new Set(citations
+    .filter(citation => citation.type === 'summa')
+    .flatMap(citation => citation.articles.map(articleNumber => `${citation.part}-${citation.question}-${articleNumber}`)));
+  const additionalPassages = passages.filter(passage =>
+    !summaCitationKeys.has(`${passage.part}-${passage.question}-${passage.article}`));
+  const previewCount = 5;
+  const visiblePassages = expanded ? additionalPassages : additionalPassages.slice(0, previewCount);
+  const hiddenCount = additionalPassages.length - visiblePassages.length;
+
+  if (!citations.length && !additionalPassages.length) return null;
+
+  return (
+    <table className="reference-table leonine-apparatus-table">
+      <tbody>
+        <tr>
+          <th scope="row">Parallel Passages</th>
+          <td>
+            {citations.length ? (
+              <div className="leonine-apparatus-block">
+                <div className="leonine-apparatus-note">
+                  {citations.map((citation, index) => (
+                    <span key={`${citation.label}-${index}`} className="leonine-citation">
+                      {index > 0 ? <span className="reference-separator">; </span> : null}
+                      <LeonineCitation
+                        citation={citation}
+                        onNavigate={onNavigate}
+                        onOpenReference={onOpenReference}
+                        resolveArticle={resolveArticle}
+                      />
+                    </span>
+                  ))}
+                </div>
+                <div className="leonine-apparatus-source">
+                  {formatLeonineSource(apparatus)}
+                </div>
+              </div>
+            ) : null}
+            {additionalPassages.length ? (
+              <div className={citations.length ? 'parallel-passage-block with-divider' : 'parallel-passage-block'}>
+                <div className="scholarly-apparatus-subhead">Parallel Passages</div>
+                <div className="parallel-passage-list">
+                  {visiblePassages.map((passage) => {
+                    const targetArticle = resolveArticle?.(passage.part, passage.question, passage.article);
+                    return (
+                      <div
+                        key={`${passage.part}-${passage.question}-${passage.article}-${passage.relation}`}
+                        className="parallel-passage-entry"
+                      >
+                        <CrossRefLink
+                          crossRef={passage}
+                          onNavigate={onNavigate}
+                          direction="parallel"
+                          resolveArticle={resolveArticle}
+                        />
+                        <span className="parallel-passage-title">
+                          {targetArticle?.title || 'Related article'}
+                        </span>
+                        <span className="parallel-passage-note">
+                          {getParallelRelationLabel(passage.relation)}
+                          {passage.note ? ` · ${passage.note}` : ''}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {hiddenCount > 0 ? (
+                    <button className="reference-more" onClick={() => setExpanded(true)}>
+                      show {hiddenCount} more
+                    </button>
+                  ) : null}
+                  {expanded && additionalPassages.length > previewCount ? (
+                    <button className="reference-more" onClick={() => setExpanded(false)}>
+                      show fewer
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+          </td>
+        </tr>
       </tbody>
     </table>
   );
@@ -724,6 +917,12 @@ export default function ArticleView({ article, onNavigate, resolveArticle, previ
         {showReaderContext ? (
           <div className="article-reference-tables">
             <AuthorityTable article={article} />
+            <ScholarlyApparatusTable
+              article={article}
+              onNavigate={onNavigate}
+              onOpenReference={onOpenReference}
+              resolveArticle={resolveArticle}
+            />
             <StructuralNavigationTable adjacentContext={adjacentContext} onNavigate={onNavigate} />
             <CrossReferenceTable article={article} onNavigate={onNavigate} resolveArticle={resolveArticle} />
           </div>

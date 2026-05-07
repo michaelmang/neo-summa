@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:parallel-passages": "node scripts/build-parallel-passages.cjs",
+    "build:leonine-parallels": "python3 scripts/build-leonine-parallels.py",
     "lint": "eslint .",
     "preview": "vite preview"
   },

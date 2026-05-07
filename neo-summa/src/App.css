@@ -342,6 +342,19 @@ html, body, #root { height: 100%; background: var(--bg-primary); color: var(--te
 .reference-inbound { color: var(--inbound); }
 .reference-outbound { color: var(--outbound); }
 .reference-structural { color: var(--text-secondary); }
+.parallel-passage-list { display: grid; gap: 0.55rem; }
+.parallel-passage-entry { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.1rem 0.55rem; align-items: baseline; }
+.parallel-passage-entry .reference-link { color: var(--accent-light); }
+.parallel-passage-title { min-width: 0; color: var(--text-secondary); font-weight: 600; }
+.parallel-passage-note { grid-column: 2; color: var(--text-muted); font-size: 0.66rem; line-height: 1.35; }
+.parallel-passage-block.with-divider { margin-top: 0.65rem; padding-top: 0.65rem; border-top: 1px solid var(--border); }
+.scholarly-apparatus-subhead { margin-bottom: 0.45rem; color: var(--text-muted); font-size: 0.65rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.leonine-apparatus-note { color: var(--text-secondary); font-family: var(--font-serif); font-size: 0.82rem; line-height: 1.55; }
+.leonine-apparatus-source { margin-top: 0.25rem; color: var(--text-muted); font-size: 0.66rem; font-weight: 700; }
+.leonine-citation-link { border: none; background: none; padding: 0; color: var(--outbound); font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.leonine-citation-link:hover { color: var(--accent-light); }
+.leonine-external-link { color: var(--inbound); }
+.leonine-citation-text { color: var(--text-secondary); }
 .reference-title-preview { display: block; margin-top: 0.12rem; color: var(--text-muted); font-size: 0.68rem; line-height: 1.35; }
 .reference-more { border: none; background: none; padding: 0; color: var(--text-muted); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .reference-more:hover { color: var(--accent-light); }

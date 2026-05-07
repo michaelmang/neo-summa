@@ -11,6 +11,12 @@ export function useSumma() {
   useEffect(() => {
     async function loadLibrary() {
       const d = await fetch('/summa.json').then(r => r.json());
+      const parallelPassageData = await fetch('/parallel-passages.json')
+        .then(r => r.json())
+        .catch(() => ({ passages: {} }));
+      const leonineData = await fetch('/leonine-parallels.json')
+        .then(r => r.json())
+        .catch(() => ({ apparatus: {}, passages: {} }));
       const manifest = await fetch('/works/manifest.json').then(r => r.json()).catch(() => ({ works: [] }));
       const bible = await fetch('/bible/en_kjv.json')
         .then(r => r.text())
@@ -26,10 +32,21 @@ export function useSumma() {
         title: 'Summa Theologica',
         primary: true
       };
+      const getParallelPassages = (article) => {
+        const key = `${article.part}:${article.question}:${article.article}`;
+        return mergeParallelPassages(
+          parallelPassageData.passages?.[key] || [],
+          leonineData.passages?.[key] || []
+        );
+      };
+      const getLeonineApparatus = (article) =>
+        leonineData.apparatus?.[`${article.part}:${article.question}:${article.article}`] || null;
       const summaArticles = d.articles.map(article => ({
         ...article,
         workId: summaWork.id,
-        workTitle: summaWork.title
+        workTitle: summaWork.title,
+        parallelPassages: getParallelPassages(article),
+        leonineApparatus: getLeonineApparatus(article)
       }));
       const extraArticles = supplementalData.flatMap(workData => workData?.articles || []);
 
@@ -39,10 +56,18 @@ export function useSumma() {
       });
 
       const idx = {};
-      for (const article of d.articles) {
+      for (const article of summaArticles) {
         idx[`${article.part}:${article.question}:${article.article}`] = article;
       }
-      setData(d);
+      setData({
+        ...d,
+        articles: summaArticles,
+        meta: {
+          ...d.meta,
+          parallelPassageGroups: Object.keys(parallelPassageData.passages || {}).length,
+          leonineApparatusArticles: Object.keys(leonineData.apparatus || {}).length
+        }
+      });
       setBibleData(bible);
       setIndex(idx);
       setLoading(false);
@@ -69,4 +94,14 @@ export function useSumma() {
   const advancedSearchArticles = (options) => searchArticlesAdvanced(corpusData, options);
 
   return { data, corpusData, bibleData, index, loading, getArticle, getQuestion, searchArticles, advancedSearchArticles };
+}
+
+function mergeParallelPassages(...groups) {
+  const seen = new Set();
+  return groups.flat().filter((entry) => {
+    const key = `${entry.part}:${entry.question}:${entry.article}:${entry.source}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
