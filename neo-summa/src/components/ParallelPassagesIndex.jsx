@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   formatLeonineSource,
-  parseLeonineCitations
+  getRenderableLeonineCitations
 } from '../lib/leonineApparatus';
 import { formatQuestionTitle } from '../lib/questionTitles';
 
@@ -37,13 +37,13 @@ function getQuestionMap(data) {
 
 function getEntries(data, questionMap) {
   return data.articles
-    .filter(article => article.leonineApparatus?.note || article.parallelPassages?.length)
     .map(article => ({
       article,
       question: questionMap.get(`${article.part}:${article.question}`),
-      citations: article.leonineApparatus?.note ? parseLeonineCitations(article.leonineApparatus.note) : [],
+      citations: article.leonineApparatus?.note ? getRenderableLeonineCitations(article.leonineApparatus.note) : [],
       parallelPassages: article.parallelPassages || []
-    }));
+    }))
+    .filter(entry => entry.citations.length || entry.parallelPassages.length);
 }
 
 function getCitationSummary(entry) {
@@ -55,12 +55,97 @@ function getCitationSummary(entry) {
   return [...citationLabels, ...passageLabels].join('; ');
 }
 
-function CitationText({ citation }) {
+function CitationLink({ citation, onNavigate, onOpenReference, resolveArticle }) {
   if (citation.type === 'summa') {
-    return `${citation.part} Q.${citation.question} ${citation.articles.length > 1 ? 'AA' : 'A'}.${citation.articles.join(', ')}`;
+    return (
+      <>
+        {citation.articles.map((articleNumber, index) => {
+          const targetArticle = resolveArticle?.(citation.part, citation.question, articleNumber);
+
+          return (
+            <span key={`${citation.part}-${citation.question}-${articleNumber}`}>
+              {index > 0 ? <span className="reference-separator">, </span> : null}
+              <button
+                type="button"
+                className="leonine-citation-link quick-tooltip"
+                onClick={() => onNavigate(citation.part, citation.question, articleNumber)}
+                data-tooltip={targetArticle
+                  ? `${citation.part} Q.${citation.question} A.${articleNumber}: ${targetArticle.title}`
+                  : `Go to ${citation.part} Q.${citation.question} A.${articleNumber}`}
+              >
+                {citation.part} Q.{citation.question} A.{articleNumber}
+              </button>
+            </span>
+          );
+        })}
+      </>
+    );
   }
 
-  return citation.label;
+  if (citation.type === 'thomas') {
+    const anchors = citation.anchors?.length ? citation.anchors : [citation.anchor].filter(Boolean);
+
+    if (anchors.length > 1) {
+      return (
+        <>
+          {anchors.map((anchor, index) => (
+            <span key={`${citation.path}-${anchor}`}>
+              {index > 0 ? <span className="reference-separator">, </span> : null}
+              <ThomasCitationButton
+                citation={citation}
+                label={getThomasCitationLabel(citation, anchor)}
+                anchor={anchor}
+                onOpenReference={onOpenReference}
+              />
+            </span>
+          ))}
+        </>
+      );
+    }
+
+    return (
+      <ThomasCitationButton
+        citation={citation}
+        label={citation.label}
+        anchor={citation.anchor}
+        onOpenReference={onOpenReference}
+      />
+    );
+  }
+
+  return null;
+}
+
+function ThomasCitationButton({ citation, label, anchor, onOpenReference }) {
+  return (
+    <button
+      type="button"
+      className="leonine-citation-link leonine-external-link"
+      onClick={() => onOpenReference?.({
+        type: 'thomas',
+        label,
+        workTitle: citation.workTitle,
+        path: citation.path,
+        anchor
+      })}
+    >
+      {label}
+    </button>
+  );
+}
+
+function getThomasCitationLabel(citation, anchor) {
+  const marker = ['scg', 'compendium', 'de-ente'].includes(citation.workId) ? 'c.' : 'a.';
+  const pattern = new RegExp(`${escapeRegExp(marker)}\\s*.*$`, 'i');
+  const prefix = citation.label.match(pattern)
+    ? citation.label.replace(pattern, `${marker} `)
+    : `${citation.label} `;
+
+  return `${prefix}${anchor}`;
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function getPartOptions(entries, partNames) {
@@ -137,7 +222,7 @@ function filterEntries(entries, filters) {
   });
 }
 
-export default function ParallelPassagesIndex({ data, partNames, onNavigate, onBack }) {
+export default function ParallelPassagesIndex({ data, partNames, resolveArticle, onNavigate, onOpenReference, onBack }) {
   const questionMap = useMemo(() => getQuestionMap(data), [data]);
   const entries = useMemo(() => getEntries(data, questionMap), [data, questionMap]);
   const partOptions = useMemo(() => getPartOptions(entries, partNames), [entries, partNames]);
@@ -314,7 +399,12 @@ export default function ParallelPassagesIndex({ data, partNames, onNavigate, onB
                 <div className="parallel-index-panel">
                   {activeEntry.citations.map((citation, index) => (
                     <span key={`${citation.label}-${index}`} className="parallel-index-citation">
-                      <CitationText citation={citation} />
+                      <CitationLink
+                        citation={citation}
+                        onNavigate={onNavigate}
+                        onOpenReference={onOpenReference}
+                        resolveArticle={resolveArticle}
+                      />
                     </span>
                   ))}
                   <p>{formatLeonineSource(activeArticle.leonineApparatus)}</p>

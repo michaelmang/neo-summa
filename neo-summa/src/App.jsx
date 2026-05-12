@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSumma } from './hooks/useSumma';
 import { PART_NAMES, PART_ORDER, PART_SCOPES } from './config/summa';
 import { canAccessApp, getAccessState, getCheckoutUrl, isLocalBypassAvailable, markPurchased, startTrial, verifyPurchasedAccess } from './lib/access';
@@ -26,6 +26,7 @@ export default function App() {
   const canBypassPaywall = useMemo(() => isLocalBypassAvailable(), []);
   const [hasAppHistory, setHasAppHistory] = useState(false);
   const [referencePanelState, setReferencePanelState] = useState({ current: null, history: [] });
+  const mainContentRef = useRef(null);
 
   useEffect(() => {
     const handlePopState = () => setRoute(parseRoute(window.location.pathname));
@@ -152,6 +153,14 @@ export default function App() {
   }, [hasAppHistory, pushRoute]);
 
   const orderedArticles = useMemo(() => getOrderedArticles(data?.articles), [data]);
+  const selected = route.type === 'reader' && route.articleRef
+    ? getArticle(route.articleRef.part, route.articleRef.question, route.articleRef.article)
+    : null;
+  const routeKey = selected ? selected.id : route.type;
+
+  useEffect(() => {
+    mainContentRef.current?.scrollTo({ top: 0, behavior: 'auto' });
+  }, [routeKey]);
 
   if (route.type === 'landing') {
     return (
@@ -188,12 +197,7 @@ export default function App() {
     </div>
   );
 
-  const selected = route.type === 'reader' && route.articleRef
-    ? getArticle(route.articleRef.part, route.articleRef.question, route.articleRef.article)
-    : null;
   const adjacentArticles = getAdjacentArticles(orderedArticles, selected);
-  const routeKey = selected ? selected.id : route.type;
-
   return (
     <div className="app">
       <header className="app-header">
@@ -232,7 +236,7 @@ export default function App() {
           partScopes={PART_SCOPES}
         />
 
-        <main className="main-content">
+        <main ref={mainContentRef} className="main-content">
           <ErrorBoundary key={routeKey}>
             <MainView
               data={data}
@@ -256,6 +260,13 @@ export default function App() {
               onOpenReference={openReference}
             />
           </ErrorBoundary>
+          <button
+            type="button"
+            className="back-to-top-btn"
+            onClick={() => mainContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' })}
+          >
+            Back to top
+          </button>
         </main>
         <ReferencePanel
           reference={referencePanelState.current}

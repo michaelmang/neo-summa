@@ -12,7 +12,7 @@ import {
 } from '../lib/bibleCitations';
 import {
   formatLeonineSource,
-  parseLeonineCitations
+  getRenderableLeonineCitations
 } from '../lib/leonineApparatus';
 
 const INTERNAL_REF_PATTERN = /(?:(FP|FS|SS|TP|XP),\s*)?(?:Question\s+\[(\d+)\]\s*,?\s*)?(Articles?\s+\[(\d+)\](?:\s*(?:,|and)\s*\[?\d+\]?)*)/gi;
@@ -418,7 +418,7 @@ function LeonineCitation({ citation, onNavigate, onOpenReference, resolveArticle
     );
   }
 
-  return <span className="leonine-citation-text">{citation.label}</span>;
+  return null;
 }
 
 function ThomasCitationButton({ citation, label, anchor, onOpenReference }) {
@@ -457,7 +457,7 @@ function ScholarlyApparatusTable({ article, onNavigate, onOpenReference, resolve
   const apparatus = article.leonineApparatus;
   const passages = article.parallelPassages || [];
   const [expanded, setExpanded] = useState(false);
-  const citations = apparatus?.note ? parseLeonineCitations(apparatus.note) : [];
+  const citations = apparatus?.note ? getRenderableLeonineCitations(apparatus.note) : [];
   const summaCitationKeys = new Set(citations
     .filter(citation => citation.type === 'summa')
     .flatMap(citation => citation.articles.map(articleNumber => `${citation.part}-${citation.question}-${articleNumber}`)));

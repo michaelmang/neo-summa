@@ -134,6 +134,12 @@ export function parseLeonineCitations(note = '') {
     .filter(Boolean);
 }
 
+export function getRenderableLeonineCitations(note = '') {
+  return parseLeonineCitations(note).filter(citation =>
+    citation.type === 'summa' || citation.type === 'thomas'
+  );
+}
+
 export function formatLeonineSource(apparatus = {}) {
   const volume = apparatus.volume?.includes('04')
     ? 'Leonine Edition, Volume IV'
@@ -212,6 +218,52 @@ function parseSummaRef(segment) {
 
 function cleanNote(note) {
   return note
+    .replace(/\b(?:ir|r|l)\s*II["']?/gi, 'I-II')
+    .replace(/\b1['"]?\s*H["']?/gi, 'I-II')
+    .replace(/\b11['"]?\s*11["']?/gi, 'II-II')
+    .replace(/\b11['"]?\s*H["']?/gi, 'II-II')
+    .replace(/\bI\*\s*II["']?/gi, 'I-II')
+    .replace(/\bII\*\s*II["']?/gi, 'II-II')
+    .replace(/\bI['"]?\s+II['"]?\b/gi, 'I-II')
+    .replace(/\bII['"]?\s+II['"]?\b/gi, 'II-II')
+    .replace(/\b(?:Cotit|Coyit|Coiit|Ojtit|Oint|Gcnt|Gent|Geut|Gciit|Gcrit|rmtt|Loni\. ucm|Cont)\.?\s*Gent\.?/gi, 'Cont. Gent.')
+    .replace(/\b(?:Dc|Dd|\/c)\s+Pot\.?/gi, 'De Pot.')
+    .replace(/\bDe\s+Pol\.?/gi, 'De Pot.')
+    .replace(/\b(?:Dc|Dd)\s+V(?:e|c|ev|ev)i?t\.?/gi, 'De Verit.')
+    .replace(/\bD[cC]\s+Vcrit\.?/gi, 'De Verit.')
+    .replace(/\bD[cC]\s+Vcrit/gi, 'De Verit.')
+    .replace(/\bD[cC]\s+Vevil\.?/gi, 'De Verit.')
+    .replace(/\b(?:Setit|Seitt|Senf|Senl|Scnt|Sml|Sent)\.?/gi, 'Sent.')
+    .replace(/\b(?:TTieol|Tlieol|TlieoU|TTteol|TTieot|TheoL|Theol)\.?/gi, 'Theol.')
+    .replace(/\b(?:Cotnpend|Co,?„?pe,?d|Compend)\.?\s*Theol\.?/gi, 'Compend. Theol.')
+    .replace(/\bQq\.\s*disp\.\s*,?\s*de\s+Verit\./gi, 'De Verit.')
+    .replace(/\bQq\.\s*disp\.\s*,?\s*de\s+Pot\./gi, 'De Pot.')
+    .replace(/\bQu\.\s*Disp\.\s*de\s+Anima\b/gi, 'Qu. de Anima')
+    .replace(/\bQu\.\s+dc\s+Anima\b/gi, 'Qu. de Anima')
+    .replace(/\bdc\s+Anima\b/gi, 'de Anima')
+    .replace(/\bdc\s+Ent\.?\s+cl\s+Ess\.?/gi, 'De Ent. et Ess.')
+    .replace(/\bDc\s+E„t\s+cl\s+Ess\.?/gi, 'De Ent. et Ess.')
+    .replace(/\bDe\s+Cmisis\b/gi, 'De Causis')
+    .replace(/\blcct\.?/gi, 'lect.')
+    .replace(/\blecl\.?/gi, 'lect.')
+    .replace(/\bnrt\.?/gi, 'art.')
+    .replace(/\bnrl\.?/gi, 'art.')
+    .replace(/\barr\.?/gi, 'art.')
+    .replace(/\barc\.?/gi, 'art.')
+    .replace(/\bqn\.?/gi, 'qu.')
+    .replace(/\bcju\.?/gi, 'qu.')
+    .replace(/\bcnp\.?/gi, 'cap.')
+    .replace(/\bCcp\.?/gi, 'Cap.')
+    .replace(/\bG(?:cnt|ciit|crit|eut)\b/gi, 'Gent.')
+    .replace(/\bJist\.?/gi, 'dist.')
+    .replace(/\btlist\.?/gi, 'dist.')
+    .replace(/\bdis,\.?/gi, 'dist.')
+    .replace(/\bpartc\b/gi, 'parte')
+    .replace(/\bloan\./gi, 'Ioan.')
+    .replace(/\bitk\s+Div\.\s+Nom\./gi, 'in Div. Nom.')
+    .replace(/\biti\s+loan\./gi, 'in Ioan.')
+    .replace(/\b11,SV\b/g, 'II Sent.')
+    .replace(/\b([vxldcm][ivxlcdm]*)n\b/gi, '$1ii')
     .replace(/\bir\s*II["']?/gi, 'I-II')
     .replace(/\br\s*II["']?/gi, 'I-II')
     .replace(/\bI\*\s*II["']?/gi, 'I-II')
